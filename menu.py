@@ -44,37 +44,14 @@ class Menu:
         
         start_x = 25
         start_y = 45
+        first_option = 11
         for i, line in enumerate(menu):
-            if i == 11:
-                if self.g.current_option == 0:
-                    self.g.stdscr.addstr(i, 0, line[:start_x], p(Colors.CYAN))
-                    self.g.stdscr.addstr(i, start_x, " > New Game         ", p(Colors.BLACK, Colors.WHITE))
-                    self.g.stdscr.addstr(i, start_y, line[start_y:], p(Colors.CYAN))
-                else:
-                    self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
-            elif i == 12:
-                if self.g.current_option == 1:
-                    self.g.stdscr.addstr(i, 0, line[:start_x], p(Colors.CYAN))
-                    self.g.stdscr.addstr(i, start_x, " > Load Game        ", p(Colors.BLACK, Colors.WHITE))
-                    self.g.stdscr.addstr(i, start_y, line[start_y:], p(Colors.CYAN))
-                else:
-                    self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
-            elif i == 13:
-                if self.g.current_option == 2:
-                    self.g.stdscr.addstr(i, 0, line[:start_x], p(Colors.CYAN))
-                    self.g.stdscr.addstr(i, start_x, " > Rules            ", p(Colors.BLACK, Colors.WHITE))
-                    self.g.stdscr.addstr(i, start_y, line[start_y:], p(Colors.CYAN))
-                else:
-                    self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
-            elif i == 14:
-                if self.g.current_option == 3:
-                    self.g.stdscr.addstr(i, 0, line[:start_x], p(Colors.CYAN))
-                    self.g.stdscr.addstr(i, start_x, " > Quit Game        ", p(Colors.BLACK, Colors.WHITE))
-                    self.g.stdscr.addstr(i, start_y, line[start_y:], p(Colors.CYAN))
-                else:
-                    self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
+            if self.g.current_option == i - first_option:
+                self.g.stdscr.addstr(i,       0, line[:start_x],        p(Colors.CYAN))
+                self.g.stdscr.addstr(i, start_x, line[start_x:start_y], p(Colors.BLACK, Colors.WHITE))
+                self.g.stdscr.addstr(i, start_y, line[start_y:],        p(Colors.CYAN))
             else:
-                self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
+                self.g.stdscr.addstr(i, 0, line,                        p(Colors.CYAN))
         self.g.stdscr.refresh()
 
     def run(self) -> None:

@@ -15,6 +15,8 @@ class Colors(Enum):
     MAGENTA = curses.COLOR_MAGENTA
     CYAN    = curses.COLOR_CYAN
     WHITE   = curses.COLOR_WHITE
+    GRAY    = 8
+    DARK_GREEN = 9
 
 def i(stdscr, x, y, n, text) -> str:
     stdscr.nodelay(0)
@@ -32,19 +34,19 @@ def i(stdscr, x, y, n, text) -> str:
 
     return user_input
 
-def save_game(self, filename="savegame") -> None:
+def save_game(g, filename="savegame") -> None:
     game_data = {
         "player": {
-            "name": self.player.name,
-            "position": self.player.position,
-            "stats": self.player.stats,
+            "name": g.player.name,
+            "position": g.player.position,
+            "stats": g.player.stats,
             "equipment": {
-                "weapon": self.player.equipment['weapon'].name,
-                "armor": self.player.equipment['armor'].name,
-                "potions": self.player.equipment['potions']
+                "weapon": g.player.equipment['weapon'].name,
+                "armor": g.player.equipment['armor'].name,
+                "potions": g.player.equipment['potions']
             },
             "inventory": [
-                item.name for item in self.player.inventory
+                item.name for item in g.player.inventory
             ]
         }
     }
@@ -91,26 +93,49 @@ def draw_outline(length: int, content: list, title: str = "") -> list:
     else:
         outlined_content = [top_border]
     
-    for line in content:
-        outlined_content.append(f"│{line.ljust(length - 2)}│")
-    outlined_content.append(bottom_border)
+    if content and isinstance(content[0], tuple):
+        # Content is a list of tuples (line, color)
+        outlined_content = [(top_border, Colors.CYAN)]
+        if title:
+            outlined_content.extend([(title_line, Colors.CYAN), (separator, Colors.CYAN)])
+        
+        for line, color in content:
+            outlined_content.append((f"│{line.ljust(length - 2)}│", color))
+        
+        outlined_content.append((bottom_border, Colors.CYAN))
+    else:
+        # Content is a list of strings
+        for line in content:
+            outlined_content.append(f"│{line.ljust(length - 2)}│")
+        outlined_content.append(bottom_border)
     
     return outlined_content
+
 
 def init_colors() -> None:
     curses.start_color()
     curses.use_default_colors()
+
+    if curses.can_change_color():
+        curses.init_color(Colors.GRAY.value,      500, 500, 500)
+        curses.init_color(Colors.DARK_GREEN.value,  0, 300, 0)
+    
     pair_number = 1
     for fg in Colors:
         for bg in Colors:
             curses.init_pair(pair_number, fg.value, bg.value)
             pair_number += 1
 
-def p(fg: Colors, bg: Colors = Colors.BLACK) -> int:
-    fg_index = list(Colors).index(fg)
-    bg_index = list(Colors).index(bg)
+def p(fg: Colors, bg: Colors = Colors.BLACK, reverse=False) -> int:
+    fg_index    = list(Colors).index(fg)
+    bg_index    = list(Colors).index(bg)
     pair_number = fg_index * len(Colors) + bg_index + 1
-    return curses.color_pair(pair_number)
+    color_pair  = curses.color_pair(pair_number)
+    
+    if reverse:
+        return color_pair | curses.A_REVERSE
+
+    return color_pair
 
 def print_stat(stdscr, y, x, line, title_color, value_color, border_color):
     parts = line.split('?')
@@ -127,7 +152,7 @@ def print_stat(stdscr, y, x, line, title_color, value_color, border_color):
         stdscr.addstr(y, x, line, border_color)
 
 def add_notif(g, message: str, color: Colors = Colors.WHITE) -> None:
-    g.notif.insert(0, {'t': message, 'c': color})
+    g.notif.insert(0, ( message, color))
     if len(g.notif) > 6:
         g.notif.pop()
 
@@ -146,7 +171,7 @@ def cleanup(g):
     curses.echo()
     curses.endwin()
 
-def fl(stdscr, t: float, msg: str, color: Colors = Colors.YELLOW) -> None:
+def fl(stdscr, t: float, color: Colors = Colors.YELLOW, msg: str = '') -> None:
     line_len = 65
     stdscr.addstr(15, 4, f"{msg}{' ' * (line_len - len(msg))}", p(color))
     stdscr.refresh()

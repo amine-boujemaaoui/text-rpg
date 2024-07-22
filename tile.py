@@ -7,11 +7,12 @@ class Tile:
         self.color     = bioms[biome]['color']
         self.name      = bioms[biome]['name']
         self.symbol    = bioms[biome]['symbol']
+        self.enemy     = bioms[biome]['enemy']
         
 bioms = {
     'g': {
         'name': 'grass',
-        'color': Colors.WHITE,
+        'color': Colors.DARK_GREEN,
         'emoji': '🌱',
         'enemy': False,
         'symbol': '.',
@@ -35,7 +36,7 @@ bioms = {
     },
     'm': {
         'name': 'mountain',
-        'color': Colors.WHITE,
+        'color': Colors.GRAY,
         'emoji': '⛰️',
         'enemy': True,
         'symbol': '^',

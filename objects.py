@@ -3,13 +3,14 @@ from enum import Enum
 class Weapon:
     def __init__(self, category, name, rarity, attack) -> None:
         self.category = category
-        self.name = name
-        self.rarity = rarity
-        self.attack = attack
+        self.name     = name
+        self.rarity   = rarity
+        self.attack   = attack
 
 class Armor:
-    def __init__(self, name, defense) -> None:
-        self.name = name
+    def __init__(self, name, rarity, defense) -> None:
+        self.name    = name
+        self.rarity  = rarity
         self.defense = defense
         
 class Rarity(Enum):
@@ -28,6 +29,6 @@ class Weapons(Enum):
     MAGIC_STAFF  = Weapon('staff', 'Magic Staff',  Rarity.RARE,   22)
     
 class Armors(Enum):
-    LEATHER   = Armor('leather',   10)
-    CHAINMAIL = Armor('chainmail', 15)
-    PLATE     = Armor('plate',     20)
+    LEATHER   = Armor('leather',   Rarity.COMMON, 10)
+    CHAINMAIL = Armor('chainmail', Rarity.RARE,   15)
+    PLATE     = Armor('plate',     Rarity.EPIC,   20)

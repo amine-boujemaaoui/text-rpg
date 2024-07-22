@@ -7,7 +7,7 @@ class Direction(Enum):
     NORTH = 'north'
     SOUTH = 'south'
     EAST  = 'east'
-    WEST = 'west'
+    WEST  = 'west'
 
 class Map:
     def __init__(self, g, width = 40, height = 20):

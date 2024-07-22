@@ -2,8 +2,9 @@ import sys
 import curses
 from game import Game
 
+game = Game()
+
 def main(stdscr):
-    game = Game()
     game.run(stdscr)
     return 0
 
