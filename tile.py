@@ -1,5 +1,5 @@
 from enum import Enum
-from utils import Colors
+from utils import Colors as C
 
 class Tile:
     def __init__(self, biome='g'):
@@ -8,71 +8,81 @@ class Tile:
         self.name      = bioms[biome]['name']
         self.symbol    = bioms[biome]['symbol']
         self.enemy     = bioms[biome]['enemy']
+        self.solid     = bioms[biome]['solid']
+        self.rate      = bioms[biome]['rate']
         
 bioms = {
     'g': {
-        'name': 'grass',
-        'color': Colors.DARK_GREEN,
-        'emoji': '🌱',
-        'enemy': False,
+        'name'  : 'grass',
+        'color' : C.DARK_GREEN,
+        'emoji' : '🌱',
+        'enemy' : False,
+        'rate'  : 0,
         'symbol': '.',
-        'solid': False,
+        'solid' : False,
     },
     'w': {
-        'name': 'water',
-        'color': Colors.BLUE,
-        'emoji': '🌊',
-        'enemy': False,
+        'name'  : 'water',
+        'color' : C.BLUE,
+        'emoji' : '🌊',
+        'enemy' : False,
+        'rate'  : 0,
         'symbol': '~',
-        'solid': True,
+        'solid' : True,
     },
     's': {
-        'name': 'sand',
-        'color': Colors.YELLOW,
-        'emoji': '🏖️',
-        'enemy': False,
+        'name'  : 'sand',
+        'color' : C.YELLOW,
+        'emoji' : '🏖️',
+        'enemy' : True,
+        'rate'  : 4,
         'symbol': 's',
-        'solid': False,
+        'solid' : False,
     },
     'm': {
-        'name': 'mountain',
-        'color': Colors.GRAY,
-        'emoji': '⛰️',
-        'enemy': True,
+        'name'  : 'mountain',
+        'color' : C.GRAY,
+        'emoji' : '⛰️',
+        'enemy' : True,
+        'rate'  : 30,
         'symbol': '^',
-        'solid': False,
+        'solid' : False,
     },
     'f': {
-        'name': 'forest',
-        'color': Colors.GREEN,
-        'emoji': '🌲',
-        'enemy': True,
+        'name'  : 'forest',
+        'color' : C.GREEN,
+        'emoji' : '🌲',
+        'enemy' : True,
+        'rate'  : 3,
         'symbol': '*',
-        'solid': False,
+        'solid' : False,
     },
     'shop': {
-        'name': 'shop',
-        'color': Colors.MAGENTA,
-        'emoji': '🏪',
-        'enemy': False,
+        'name'  : 'shop',
+        'color' : C.MAGENTA,
+        'emoji' : '🏪',
+        'enemy' : False,
+        'rate'  : 0,
         'symbol': '$',
-        'solid': False,
+        'solid' : False,
     },
     'castle': {
-        'name': 'castle',
-        'color': Colors.YELLOW,
-        'emoji': '🏰',
-        'enemy': False,
+        'name'  : 'castle',
+        'color' : C.YELLOW,
+        'emoji' : '🏰',
+        'enemy' : False,
+        'rate'  : 0,
         'symbol': 'C',
-        'solid': False,
+        'solid' : False,
     },
     'player': {
-        'name': 'player',
-        'color': Colors.RED,
-        'emoji': '🧑',
-        'enemy': False,
+        'name'  : 'player',
+        'color' : C.RED,
+        'emoji' : '🧑',
+        'enemy' : False,
+        'rate'  : 0,
         'symbol': 'P',
-        'solid': False,
+        'solid' : False,
     },
 }
 

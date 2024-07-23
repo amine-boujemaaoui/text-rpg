@@ -10,7 +10,7 @@ class Direction(Enum):
     WEST  = 'west'
 
 class Map:
-    def __init__(self, g, width = 40, height = 20):
+    def __init__(self, g, width = 60, height = 21):
         self.g = g
         self.width = width
         self.height = height

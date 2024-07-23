@@ -1,22 +1,38 @@
-import curses
+from enum import Enum
 
-def main(stdscr):
-    # Start colors in curses
-    curses.start_color()
-    
-    # Define a new color for gray if the terminal supports it
-    if curses.can_change_color():
-        # RGB values for gray (in range 0-1000)
-        curses.init_color(8, 500, 500, 500)  # 8 is the index for gray
-    
-    # Initialize color pair for gray on black
-    curses.init_pair(1, 8, curses.COLOR_BLACK)
-    
-    # Use the color pair
-    stdscr.addstr(0, 0, "This is gray on black", curses.color_pair(1) | curses.A_REVERSE)
-    
-    stdscr.refresh()
-    stdscr.getch()
+class Weapon:
+    def __init__(self, category, name, rarity, attack) -> None:
+        self.category = category
+        self.name     = name
+        self.rarity   = rarity
+        self.attack   = attack
+        
+class Rarity(Enum):
+    COMMON = 'common'
+    RARE   = 'rare'
+    EPIC   = 'epic'
 
-# Initialize curses
-curses.wrapper(main)
+class Weapons(Enum):
+    SHORT_SWORD  = Weapon('sword', 'Short Sword',  Rarity.COMMON, 10)
+    LONG_SWORD   = Weapon('sword', 'Long Sword',   Rarity.RARE,   15)
+    HAND_AXE     = Weapon('axe',   'Hand Axe',     Rarity.COMMON, 12)
+    BATTLE_AXE   = Weapon('axe',   'Battle Axe',   Rarity.EPIC,   18)
+    SHORT_BOW    = Weapon('bow',   'Short Bow',    Rarity.COMMON,  8)
+    LONG_BOW     = Weapon('bow',   'Long Bow',     Rarity.RARE,   14)
+    WOODEN_STAFF = Weapon('staff', 'Wooden Staff', Rarity.COMMON,  6)
+    MAGIC_STAFF  = Weapon('staff', 'Magic Staff',  Rarity.RARE,   22)
+    
+class SHOP_WEAPONS(Enum):
+    SHORT_SWORD  = (Weapons.SHORT_SWORD, 10)
+    LONG_SWORD   = (Weapons.LONG_SWORD,  20)
+    HAND_AXE     = (Weapons.HAND_AXE,    30)
+    BATTLE_AXE   = (Weapons.BATTLE_AXE,  40)
+    SHORT_BOW    = (Weapons.SHORT_BOW,   50)
+    
+def main():
+    shop_weapons_list = list(SHOP_WEAPONS)
+    weapon, price = shop_weapons_list[2].value
+    print(weapon.name, price)
+    
+if __name__ == "__main__":
+    main()

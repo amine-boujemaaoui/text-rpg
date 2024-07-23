@@ -5,7 +5,7 @@ class Rules:
         self.g = g
 
     def draw(self) -> None:
-        from utils import Colors
+        from utils import Colors as C
         rules = [
             "┌────────────────────────────────────────────────────────────────────┐",
             "│                                                                    │",
@@ -42,7 +42,7 @@ class Rules:
         ]
         
         for i, line in enumerate(rules):
-            self.g.stdscr.addstr(i, 0, line, p(Colors.CYAN))
+            self.g.stdscr.addstr(i, 0, line, p(C.CYAN))
         
         self.g.stdscr.refresh()
             

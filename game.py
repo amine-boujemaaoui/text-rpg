@@ -8,7 +8,7 @@ from map import Map, Direction
 from rules import Rules
 from entities import Player, ENEMIES, create_enemy
 from play import Play
-from utils import i, init_colors, p, add_notif, save_game, load_game, Colors, fl
+from utils import i, init_colors, p, add_notif, save_game, load_game, Colors as C, fl
 from enum import Enum
 
 class GameState(Enum):
@@ -27,9 +27,12 @@ class Game:
         self.stdscr = None
         self.player = None
         
-        self.current_option    = 0
-        self.current_state     = GameState.MENU
-        self.current_sub_state = SubGameState.NONE
+        self.first_time = True
+        
+        self.current_option     = 0
+        self.current_sub_option = -1
+        self.current_state      = GameState.MENU
+        self.current_sub_state  = SubGameState.NONE
 
         self.exp_table = {
             1: 100,
@@ -56,9 +59,9 @@ class Game:
 
         self.notif = []
         for _ in range(6):
-            self.notif.append(('', Colors.WHITE))
-        add_notif(self, "Press 'ESCAPE' to enter command mode.".center(40), Colors.GRAY)
-        add_notif(self, 'Welcome to the game!'.center(40), Colors.YELLOW)
+            self.notif.append(('', C.WHITE, C.BLACK))
+        add_notif(self, "Press 'ESCAPE' to enter command mode.".center(40 + 20), C.GRAY)
+        add_notif(self, 'Welcome to the game!'.center(40 + 20), C.YELLOW)
         add_notif(self, '')
 
     def cleanup(self):
@@ -70,44 +73,44 @@ class Game:
 
     def new_game(self) -> None:
         rules = [
-            "┌────────────────────────────────────────────────────────────────────┐",
-            "│                                                                    │",
-            "│                ██████╗  ██████╗ ███╗   ██╗██╗███████╗              │",
-            "│               ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝              │",
-            "│               ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗              │",
-            "│               ██║   ██║██║   ██║██║╚██╗██║██║╚════██║              │",
-            "│               ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║              │",
-            "│                ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝              │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                       ┌─────────────────────┐                      │",
-            "│                       │       New Game      │                      │",
-            "│                       └─────────────────────┘                      │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "└────────────────────────────────────────────────────────────────────┘",
+            "┌────────────────────────────────────────────────────────────────────────────────────────┐",
+            "│                                                                                        │",
+            "│                          ██████╗  ██████╗ ███╗   ██╗██╗███████╗                        │",
+            "│                         ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝                        │",
+            "│                         ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗                        │",
+            "│                         ██║   ██║██║   ██║██║╚██╗██║██║╚════██║                        │",
+            "│                         ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║                        │",
+            "│                          ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                 ┌─────────────────────┐                                │",
+            "│                                 │       New Game      │                                │",
+            "│                                 └─────────────────────┘                                │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "└────────────────────────────────────────────────────────────────────────────────────────┘",
         ]
 
         self.stdscr.clear()
         for idx, line in enumerate(rules):
-            self.stdscr.addstr(idx, 0, line, p(Colors.CYAN))
+            self.stdscr.addstr(idx, 0, line, p(C.CYAN))
         self.stdscr.refresh()
         
         player_name = i(self.stdscr, 4, 13, 10, "Enter your player's name:")
@@ -117,46 +120,48 @@ class Game:
             'x': random.randint(0, self.map.width - 1),
             'y': random.randint(0, self.map.height - 1)
         }
-        save_game(self, player_name)
+        save_game(self, player_name, True)
+        load_game(self, player_name)
         self.current_state = GameState.PLAY
 
     def load_game(self, stdscr) -> None:
         stdscr.clear()
         for idx, line in enumerate([
-            "┌────────────────────────────────────────────────────────────────────┐",
-            "│                                                                    │",
-            "│                ██████╗  ██████╗ ███╗   ██╗██╗███████╗              │",
-            "│               ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝              │",
-            "│               ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗              │",
-            "│               ██║   ██║██║   ██║██║╚██╗██║██║╚════██║              │",
-            "│               ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║              │",
-            "│                ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝              │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                       ┌─────────────────────┐                      │",
-            "│                       │      Load Game      │                      │",
-            "│                       └─────────────────────┘                      │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "│                                                                    │",
-            "└────────────────────────────────────────────────────────────────────┘",
+            "┌────────────────────────────────────────────────────────────────────────────────────────┐",
+            "│                                                                                        │",
+            "│                          ██████╗  ██████╗ ███╗   ██╗██╗███████╗                        │",
+            "│                         ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝                        │",
+            "│                         ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗                        │",
+            "│                         ██║   ██║██║   ██║██║╚██╗██║██║╚════██║                        │",
+            "│                         ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║                        │",
+            "│                          ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                 ┌─────────────────────┐                                │",
+            "│                                 │      Load Game      │                                │",
+            "│                                 └─────────────────────┘                                │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "│                                                                                        │",
+            "└────────────────────────────────────────────────────────────────────────────────────────┘",
         ]):
-            stdscr.addstr(idx, 0, line, p(Colors.CYAN))
+            stdscr.addstr(idx, 0, line, p(C.CYAN))
 
         try:
             save_name = i(stdscr, 4, 14, 10, "Enter the save game name:")
@@ -166,17 +171,17 @@ class Game:
             
             self.player = Player(self, save_name)
             
-            fl(self.stdscr, 0.2, Colors.YELLOW, f"Loading game '{save_name}' ...")
+            fl(self.stdscr, 0.2, C.YELLOW, f"Loading game '{save_name}' ...")
             load_game(self, save_name)
             self.current_state = GameState.PLAY
-            fl(self.stdscr, 0.2, Colors.GREEN,  f"Game '{save_name}' loaded successfully.")
+            fl(self.stdscr, 0.2, C.GREEN,  f"Game '{save_name}' loaded successfully.")
             
         except FileNotFoundError:
-            fl(self.stdscr,   2, Colors.RED, f"Game '{save_name}' not found.")
+            fl(self.stdscr,   2, C.RED, f"Game '{save_name}' not found.")
             self.current_state = GameState.MENU
             
         except Exception as e:
-            fl(self.stdscr,  10, Colors.RED, f"(game.py -> load_game) An error occurred: {e}")
+            fl(self.stdscr,  10, C.RED, f"(game.py -> load_game) An error occurred: {e}")
             self.current_state = GameState.MENU
 
     def generate_map(self, dir: Direction) -> None:
@@ -228,7 +233,7 @@ class Game:
                         return 0
 
         except Exception as e:
-            add_notif(self, f"(game.py -> run) An error occurred: {e}", Colors.RED)
+            add_notif(self, f"(game.py -> run) An error occurred: {e}", C.RED)
             time.sleep(3)
             curses.curs_set(0)
             return 1

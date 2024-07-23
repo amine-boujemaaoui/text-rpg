@@ -34,20 +34,23 @@ def i(stdscr, x, y, n, text) -> str:
 
     return user_input
 
-def save_game(g, filename="savegame") -> None:
+def save_game(g, filename = '', first = False) -> None:
+    if not filename:
+        filename = g.player.name
     game_data = {
         "player": {
-            "name": g.player.name,
+            "name":     g.player.name,
             "position": g.player.position,
-            "stats": g.player.stats,
+            "stats":    g.player.stats,
             "equipment": {
-                "weapon": g.player.equipment['weapon'].name,
-                "armor": g.player.equipment['armor'].name,
+                "weapon":  g.player.equipment['weapon'].name if first else g.player.equipment['weapon'],
+                "armor":   g.player.equipment['armor'].name  if first else g.player.equipment['armor'],
                 "potions": g.player.equipment['potions']
             },
-            "inventory": [
-                item.name for item in g.player.inventory
-            ]
+            "inventory": {
+                "weapons": [weapon.name for weapon in g.player.inventory['weapons']] if first else [weapon for weapon in g.player.inventory['weapons']],
+                "armors":  [armor.name for armor in g.player.inventory['armors']]    if first else [armor for armor in g.player.inventory['armors']]
+            }
         }
     }
 
@@ -59,19 +62,19 @@ def load_game(g, filename="savegame") -> None:
         game_data = json.load(f)
 
     player_data = game_data["player"]
-    
+
     g.player.name      = player_data["name"]
     g.player.position  = player_data["position"]
     g.player.stats     = player_data["stats"]
     g.player.equipment = {
-        "weapon": Weapons[player_data["equipment"]["weapon"]].value,
-        "armor": Armors[player_data["equipment"]["armor"]].value,
+        "weapon":  Weapons[player_data["equipment"]["weapon"]].name,
+        "armor":   Armors[player_data["equipment"]["armor"]].name,
         "potions": player_data["equipment"]["potions"]
     }
-    g.player.inventory = [
-        Weapons[item].value if item in Weapons.__members__ else Armors[item].value
-        for item in player_data["inventory"]
-    ]
+    g.player.inventory = {
+        'weapons': [Weapons[item].name for item in player_data["inventory"]["weapons"]],
+        'armors':  [Armors[item].name   for item in player_data["inventory"]["armors"]],
+    }
 
 def format_line(prefix: str, value: str, max_length: str) -> str:
     total_length = len(prefix) + len(value) + 4
@@ -94,15 +97,15 @@ def draw_outline(length: int, content: list, title: str = "") -> list:
         outlined_content = [top_border]
     
     if content and isinstance(content[0], tuple):
-        # Content is a list of tuples (line, color)
-        outlined_content = [(top_border, Colors.CYAN)]
+        # Content is a list of tuples (line, fg, bg)
+        outlined_content = [(top_border, Colors.CYAN, Colors.BLACK)]
         if title:
-            outlined_content.extend([(title_line, Colors.CYAN), (separator, Colors.CYAN)])
+            outlined_content.extend([(title_line, Colors.CYAN, Colors.BLACK), (separator, Colors.CYAN, Colors.BLACK)])
         
-        for line, color in content:
-            outlined_content.append((f"│{line.ljust(length - 2)}│", color))
+        for line, fg, bg in content:
+            outlined_content.append((f"│{line.ljust(length - 2)}│", fg, bg))
         
-        outlined_content.append((bottom_border, Colors.CYAN))
+        outlined_content.append((bottom_border, Colors.CYAN, Colors.BLACK))
     else:
         # Content is a list of strings
         for line in content:
@@ -151,19 +154,26 @@ def print_stat(stdscr, y, x, line, title_color, value_color, border_color):
     else:
         stdscr.addstr(y, x, line, border_color)
 
-def add_notif(g, message: str, color: Colors = Colors.WHITE) -> None:
-    g.notif.insert(0, ( message, color))
+def add_notif(g, message: str, fg: Colors = Colors.WHITE, bg: Colors = Colors.BLACK) -> None:
+    g.notif.insert(0, (message, fg, bg))
     if len(g.notif) > 6:
         g.notif.pop()
 
-def display(stdscr, frame_with_colors, frame_x, frame_y, MAX_WIDTH, offset = 0) -> None:
-    for i, (line, color) in enumerate(frame_with_colors):
+def clear_notif(g) -> None:
+    g.notif = [ ('', Colors.WHITE, Colors.BLACK) for _ in range(6) ]
+
+def display(stdscr, frame_with_colors, frame_x, frame_y, MAX_WIDTH, offset_l = 0, offset_r = 0, fix_title = False) -> None:
+    for i, (line, fg, bg) in enumerate(frame_with_colors):
         if i == 0 or i == len(frame_with_colors) - 1:
             stdscr.addstr(frame_y + i, frame_x, line, p(Colors.CYAN))
         else:
             stdscr.addstr(frame_y + i, frame_x, line[0], p(Colors.CYAN))
-            stdscr.addstr(frame_y + i, frame_x + 1 + offset, line[1:-1], p(color))
-            stdscr.addstr(frame_y + i, frame_x + MAX_WIDTH - 1, line[-1], p(Colors.CYAN))
+            stdscr.addstr(frame_y + i, frame_x + 1 + offset_l, line[1:-1], p(fg, bg))
+            if offset_r: stdscr.addstr(frame_y + i, frame_x + MAX_WIDTH - 1 - offset_r, f"{' ' *  (offset_r)}", p(Colors.CYAN))
+            stdscr.addstr(frame_y + i, frame_x + MAX_WIDTH - 1, line[-1],  p(Colors.CYAN))
+    if fix_title:
+        line, fg, bg = frame_with_colors[2]
+        stdscr.addstr(frame_y + 2, frame_x, line, p(fg, bg))
             
 def cleanup(g):
     curses.nocbreak()
