@@ -8,14 +8,15 @@ from map import Map, Direction
 from rules import Rules
 from entities import Player, ENEMIES, create_enemy
 from play import Play
-from utils import i, init_colors, p, add_notif, save_game, load_game, Colors as C, fl
+from utils import i, init_colors, p, add_notif, save_game, load_game, Colors as C, fl, create_ui
 from enum import Enum
 
 class GameState(Enum):
-    MENU  = 'menu'
-    RULES = 'rules'
-    PLAY  = 'play'
-    QUIT  = 'quit'
+    MENU     = 'menu'
+    PLAY     = 'play'
+    RULES    = 'rules'
+    COMMANDS = 'commands'
+    QUIT     = 'quit'
     
 class SubGameState(Enum):
     NEW_GAME  = 'new_game'
@@ -47,10 +48,31 @@ class Game:
             10: 51200,
         }
 
-        self.menu  = Menu(self)
-        self.rules = Rules(self)
-        self.play  = Play(self)   
-        self.map   = Map(self)
+        self.menu     = Menu(self)
+        self.rules    = Rules(self)
+        self.play     = Play(self)   
+        self.map      = Map(self)
+        self.commands = create_ui("Commands", [
+                "              ┌──────────────────────────────────────────────────────────┐            ",
+                "              │             MENU, COMMANDS, SHOP, INVENTORY              │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ up, down, w, s:             │ Navigate through the menu. │            ",
+                "              │ enter:                      │ Select an option.          │            ",
+                "              ├─────────────────────────────┴────────────────────────────┤            ",
+                "              │                           GAME                           │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ w, a, s, d:                 │ Move the player.           │            ",
+                "              │ i:                          │ Open the inventory.        │            ",
+                "              │ ESC:                        │ Enter in commands menu.    │            ",
+                "              │ e:                          │ Show Equipments view.      │            ",
+                "              ├─────────────────────────────┴────────────────────────────┤            ",
+                "              │                           FIGHT                          │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ space:                      │ Attack the enemy.          │            ",
+                "              │ 1, 2:                       │ Use a potion (heal, mana). │            ",
+                "              │ ESC:                        │ Enter in commands menu.    │            ",
+                "              └─────────────────────────────┴────────────────────────────┘            ",
+            ])
         
         self.enemies = {}
         for enemy_key in ENEMIES:
@@ -72,41 +94,7 @@ class Game:
             curses.endwin()
 
     def new_game(self) -> None:
-        rules = [
-            "┌────────────────────────────────────────────────────────────────────────────────────────┐",
-            "│                                                                                        │",
-            "│                          ██████╗  ██████╗ ███╗   ██╗██╗███████╗                        │",
-            "│                         ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝                        │",
-            "│                         ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗                        │",
-            "│                         ██║   ██║██║   ██║██║╚██╗██║██║╚════██║                        │",
-            "│                         ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║                        │",
-            "│                          ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                 ┌─────────────────────┐                                │",
-            "│                                 │       New Game      │                                │",
-            "│                                 └─────────────────────┘                                │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "└────────────────────────────────────────────────────────────────────────────────────────┘",
-        ]
+        rules = create_ui("New Game", [])
 
         self.stdscr.clear()
         for idx, line in enumerate(rules):
@@ -126,41 +114,7 @@ class Game:
 
     def load_game(self, stdscr) -> None:
         stdscr.clear()
-        for idx, line in enumerate([
-            "┌────────────────────────────────────────────────────────────────────────────────────────┐",
-            "│                                                                                        │",
-            "│                          ██████╗  ██████╗ ███╗   ██╗██╗███████╗                        │",
-            "│                         ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝                        │",
-            "│                         ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗                        │",
-            "│                         ██║   ██║██║   ██║██║╚██╗██║██║╚════██║                        │",
-            "│                         ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║                        │",
-            "│                          ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                 ┌─────────────────────┐                                │",
-            "│                                 │      Load Game      │                                │",
-            "│                                 └─────────────────────┘                                │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "│                                                                                        │",
-            "└────────────────────────────────────────────────────────────────────────────────────────┘",
-        ]):
+        for idx, line in enumerate(create_ui("Load Game", [])):
             stdscr.addstr(idx, 0, line, p(C.CYAN))
 
         try:
@@ -212,6 +166,15 @@ class Game:
                         
                     case GameState.RULES:
                         self.rules.run()
+                    
+                    case GameState.COMMANDS:
+                        for i, line in enumerate(self.commands):
+                            self.stdscr.addstr(i, 0, line, p(C.CYAN))
+                        while self.current_state == GameState.COMMANDS:
+                            key = self.stdscr.getch()
+                            if key == ord('\n') or key == ord('\x1b') or key == ord(' '):
+                                self.current_state = GameState.MENU
+                                break
                         
                     case GameState.PLAY:
                         match self.current_sub_state:

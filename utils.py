@@ -80,7 +80,11 @@ def format_line(prefix: str, value: str, max_length: str) -> str:
     total_length = len(prefix) + len(value) + 4
     return f"{prefix}{value}{' ' * (max_length - total_length)}"
 
-def draw_bar(value, value_max, size, fill='█', empty='░') -> str:
+""" 
+'■', '─'
+'█', '░' 
+"""
+def draw_bar(value, value_max, size, fill='■', empty='─') -> str:
     filled_length = int(size * value / value_max)
     bar = fill * filled_length + empty * (size - filled_length)
     return bar
@@ -187,3 +191,28 @@ def fl(stdscr, t: float, color: Colors = Colors.YELLOW, msg: str = '') -> None:
     stdscr.refresh()
     time.sleep(t)
 
+def create_ui(title: str, menu: list) -> list:
+    ui = [
+    "┌────────────────────────────────────────────────────────────────────────────────────────┐",
+    "│                                                                                        │",
+    "│                          ██████╗  ██████╗ ███╗   ██╗██╗███████╗                        │",
+    "│                         ██╔════╝ ██╔═══██╗████╗  ██║██║██╔════╝                        │",
+    "│                         ██║  ███╗██║   ██║██╔██╗ ██║██║███████╗                        │",
+    "│                         ██║   ██║██║   ██║██║╚██╗██║██║╚════██║                        │",
+    "│                         ╚██████╔╝╚██████╔╝██║ ╚████║██║███████║                        │",
+    "│                          ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝                        │",
+    "│                                                                                        │",
+    "│                                                                                        │",
+    "│                                 ┌─────────────────────┐                                │",
+   f"│                                 │{title.center(21)}│                                │",
+    "│                                 └─────────────────────┘                                │",
+]
+    
+    for line in menu:
+        ui.append("│ " + line.ljust(88 - 2) + " │")
+    
+    for _ in range(19 - len(menu)):
+        ui.append("│" + " " * 88 + "│")
+    
+    ui.append("└" + "─" * 88 + "┘")
+    return ui

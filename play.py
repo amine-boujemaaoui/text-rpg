@@ -2,7 +2,7 @@ import time
 import random
 import curses
 
-from utils import draw_bar, draw_outline, p, print_stat, format_line as fl, add_notif, display, Colors as C, cleanup as cl, save_game, clear_notif
+from utils import draw_bar, draw_outline, p, print_stat, format_line as fl, add_notif, display, Colors as C, cleanup as cl, save_game, clear_notif, create_ui
 from tile import ascii_art
 from game import Direction
 from objects import SHOP_WEAPONS, SHOP_ARMORS, Weapons as W, Armors as A, Rarity
@@ -16,6 +16,7 @@ class PlayStates(Enum):
     SHOPPING  = 3
     QUITTING  = 4
     INVENTORY = 5
+    HELP      = 6
     
 class FightStates(Enum):
     PLAYER_TURN = 0
@@ -28,6 +29,30 @@ class Play:
         self.current_enemy = None
         self.fight_state = FightStates.PLAYER_TURN
         self.counter = 0
+        
+        self.commands = create_ui("Commands", [
+                "              ┌──────────────────────────────────────────────────────────┐            ",
+                "              │             MENU, COMMANDS, SHOP, INVENTORY              │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ up, down, w, s:             │ Navigate through the menu. │            ",
+                "              │ enter:                      │ Select an option.          │            ",
+                "              ├─────────────────────────────┴────────────────────────────┤            ",
+                "              │                           GAME                           │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ w, a, s, d:                 │ Mobe the player.           │            ",
+                "              │ i:                          │ Open the inventory.        │            ",
+                "              │ ESC:                        │ Enter in commands menu.    │            ",
+                "              │ e:                          │ Show Equipments view.      │            ",
+                "              ├─────────────────────────────┴────────────────────────────┤            ",
+                "              │                           FIGHT                          │            ",
+                "              ├─────────────────────────────┬────────────────────────────┤            ",
+                "              │ space:                      │ Attack the enemy.          │            ",
+                "              │ 1, 2:                       │ Use a potion (heal, mana). │            ",
+                "              │ ESC:                        │ Enter in commands menu.    │            ",
+                "              └─────────────────────────────┴────────────────────────────┘            ",
+            ])
+        
+        self.show_equipment = False
 
     def push_state(self, state: PlayStates) -> None:
         self.state_stack.append(state)
@@ -92,18 +117,23 @@ class Play:
         empty = (" " * (MAX_LENGTH - 2), C.WHITE, C.BLACK)
 
         content = [
-            (fl(" Name     ?", self.g.player.name,                     MAX_LENGTH), C.WHITE , C.BLACK),
-            (fl(" HP       ?", hp_bar,                                 MAX_LENGTH), C.RED   , C.BLACK),
-            (fl(" Mana     ?", mana_bar,                               MAX_LENGTH), C.BLUE  , C.BLACK),
-            (fl(" Exp:     ?", exp_bar,                                MAX_LENGTH), C.GREEN , C.BLACK),
+            (fl(" Name     ?", self.g.player.name,                      MAX_LENGTH), C.WHITE,  C.BLACK),
             empty,
-            (fl(" Level    ?", str(self.g.player.stats['level']),      MAX_LENGTH), C.GREEN,  C.BLACK),
-            (fl(" Gold     ?", str(self.g.player.stats['gold']) + '$', MAX_LENGTH), C.YELLOW, C.BLACK),
-            (fl(" Attack   ?", str(self.g.player.stats['attack']),     MAX_LENGTH), C.WHITE , C.BLACK),
-            (fl(" Defense  ?", str(self.g.player.stats['defense']),    MAX_LENGTH), C.WHITE , C.BLACK),
+            (fl(" HP       ?", hp_bar,                                  MAX_LENGTH), C.RED,    C.BLACK),
+            (fl(" Mana     ?", mana_bar,                                MAX_LENGTH), C.BLUE,   C.BLACK),
+            (fl(" Exp:     ?", exp_bar,                                 MAX_LENGTH), C.GREEN,  C.BLACK),
+            empty,
+            (fl(" Level    ?", str(self.g.player.stats['level']),       MAX_LENGTH), C.GREEN,  C.BLACK),
+            (fl(" Gold     ?", str(self.g.player.stats['gold']) + '$',  MAX_LENGTH), C.YELLOW, C.BLACK),
+            (fl(" Attack   ?", str(self.g.player.stats['attack']),      MAX_LENGTH), C.WHITE,  C.BLACK),
+            (fl(" Base ATK ?", str(self.g.player.stats['base_attack']), MAX_LENGTH), C.WHITE,  C.BLACK),
+            (fl(" Defense  ?", str(self.g.player.stats['defense']),     MAX_LENGTH), C.WHITE,  C.BLACK),
+            (fl(" Base DEF ?", str(self.g.player.stats['base_defense']),MAX_LENGTH), C.WHITE,  C.BLACK),
             empty,
             (fl(" Position ?", f"({x:>2},{y:>2})",                     MAX_LENGTH), C.WHITE , C.BLACK),
         ]
+        for _ in range(21 - len(content)):
+            content.append(empty)
         return draw_outline(MAX_LENGTH, content, "Player Stats")
 
     def display_stats(self, stdscr, stats_x, stats_y):
@@ -136,15 +166,26 @@ class Play:
                 armor_rarity_color = C.BLUE
             case Rarity.EPIC:
                 armor_rarity_color = C.MAGENTA
+                
+        empty = ("", C.WHITE, C.BLACK)
 
         content = [
-            (fl(" Weapon    ?", weapon.name,     MAX_LENGTH), weapon_rarity_color, C.BLACK),
-            (fl(" Armor     ?", armor.name,      MAX_LENGTH), armor_rarity_color,  C.BLACK),
-               ("",                                           C.WHITE, C.BLACK),
+               (" Weapon    ?              ",                 C.WHITE, C.BLACK),
+            (fl("  - name   ?", weapon.name,     MAX_LENGTH), C.WHITE, C.BLACK),
+            (fl("  - ATK    ?", str(weapon.attack),   MAX_LENGTH), C.WHITE, C.BLACK),
+            (fl("  - rarity ?", weapon.rarity.value,   MAX_LENGTH), weapon_rarity_color, C.BLACK),
+                empty,
+               (" Armor     ?              ",                 C.WHITE, C.BLACK),
+            (fl("  - name   ?", armor.name,      MAX_LENGTH), C.WHITE, C.BLACK),
+            (fl("  - DEF    ?", str(armor.defense),   MAX_LENGTH), C.WHITE, C.BLACK),
+            (fl("  - rarity ?", armor.rarity.value,   MAX_LENGTH), armor_rarity_color, C.BLACK),
+                empty,
                (" Potions   ?              ",                 C.WHITE, C.BLACK),
             (fl(" - healing ?", healing_potions, MAX_LENGTH), C.RED  , C.BLACK),
             (fl(" - mana    ?", mana_potions,    MAX_LENGTH), C.BLUE , C.BLACK),
         ]
+        for _ in range(21 - len(content)):
+            content.append(empty)
         return draw_outline(MAX_LENGTH, content, "Equipment")
 
     def display_equipment(self, stdscr, equip_x, equip_y):
@@ -254,7 +295,7 @@ class Play:
         display(stdscr, self.draw_fight(), fight_x, fight_y, 42 + 20)
         
         enemy_max_hp = self.current_enemy.stats['max_hp']
-        enemy_bar = draw_bar(self.current_enemy.stats['hp'], enemy_max_hp, 32)
+        enemy_bar = draw_bar(self.current_enemy.stats['hp'], enemy_max_hp, 32, '█', '░')
         stdscr.addstr(fight_y + 5, fight_x + 17, enemy_bar, p(C.RED))
         stdscr.addstr(fight_y + 4, fight_x + 17, f"{self.current_enemy.name}", p(C.RED))
         
@@ -470,17 +511,13 @@ class Play:
                             gold_lost  = random.randint(20, 50)
                             level_lost = random.randint(1, 2)
                             
-                            self.g.player.stats['level'] -= level_lost
+                            for _ in range(level_lost):
+                                self.g.player.level_down()
+                            
                             self.g.player.stats['gold']  -= gold_lost
-                            self.g.player.stats['exp']    = 0
-                            self.g.player.stats['hp']     = self.g.player.stats['max_hp']
-                            self.g.player.stats['mana']   = self.g.player.stats['max_mana']
                             
                             if self.g.player.stats['gold'] < 0:
                                 self.g.player.stats['gold'] = 0
-                                
-                            if self.g.player.stats['level'] < 1:
-                                self.g.player.stats['level'] = 1
                                 
                             add_notif(self.g, f"You lost {gold_lost}$ and {level_lost} level(s)!", C.RED)
                             add_notif(self.g, "You died! Game Over.", C.RED)
@@ -505,7 +542,8 @@ class Play:
     def execute_command(self):
         match self.g.current_option:
             case 0:
-                add_notif(self.g, "Help selected", C.CYAN)
+                self.push_state(PlayStates.HELP)
+                self.push_state(PlayStates.HELP)
             case 1:
                 save_game(self.g)
                 add_notif(self.g, f"Saved game as '{self.g.player.name}'", C.GREEN)
@@ -529,51 +567,60 @@ class Play:
         map_x,   map_y   =  0     ,  0
         fight_x, fight_y =  0     ,  0 
         stats_x, stats_y = 42 + 20,  0
-        equip_x, equip_y = 42 + 20, 15
+        equip_x, equip_y = 42 + 20,  0
         cmd_x,   cmd_y   =  0     , 24 + 1
         notif_x, notif_y = 13     , 24 + 1
         biome_x, biome_y = 57 + 20, 24 + 1
+        
         
         empty_box = draw_outline(42 + 20, [("", C.WHITE, C.BLACK) for _ in range(23)])
         
         msg = ""
         try:
-            # Draw the map or the fight
-            if self.play_state == PlayStates.FIGHTING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.FIGHTING):
-                msg = "(play, draw, display_fight)"
-                self.display_fight(self.g.stdscr, fight_x, fight_y)
-            elif self.play_state == PlayStates.PLAYING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.PLAYING):
-                msg = "(play, draw, display_map)"
-                self.display_map(self.g.stdscr, map_x, map_y)
-            elif self.play_state == PlayStates.SHOPPING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.SHOPPING):
-                msg = "(play, draw, display, shop)"
-                display(self.g.stdscr, self.draw_shop(), 0, 0, 42 + 20, 2, 2, True)
-            elif self.play_state == PlayStates.QUITTING:
-                msg = "(play, draw, display, empty_box)"
-                display(self.g.stdscr, empty_box, 0, 0, 42 + 20)
-            elif self.play_state == PlayStates.INVENTORY or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.INVENTORY):
-                msg = "(play, draw, display, inventory)"
-                display(self.g.stdscr, self.draw_inventory(), 0, 0, 42 + 20, 2, 2, True)
-            
-            # Draw the player stats
-            msg = "(play, draw, display_stats)"
-            self.display_stats(self.g.stdscr, stats_x, stats_y)
+            if not self.play_state == PlayStates.HELP:
+                # Draw the map or the fight
+                if self.play_state == PlayStates.FIGHTING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.FIGHTING):
+                    msg = "(play, draw, display_fight)"
+                    self.display_fight(self.g.stdscr, fight_x, fight_y)
+                elif self.play_state == PlayStates.PLAYING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.PLAYING):
+                    msg = "(play, draw, display_map)"
+                    self.display_map(self.g.stdscr, map_x, map_y)
+                elif self.play_state == PlayStates.SHOPPING or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.SHOPPING):
+                    msg = "(play, draw, display, shop)"
+                    display(self.g.stdscr, self.draw_shop(), 0, 0, 42 + 20, 2, 2, True)
+                elif self.play_state == PlayStates.QUITTING:
+                    msg = "(play, draw, display, empty_box)"
+                    display(self.g.stdscr, empty_box, 0, 0, 42 + 20)
+                elif self.play_state == PlayStates.INVENTORY or (self.play_state == PlayStates.COMMANDS and self.state_stack[-2] == PlayStates.INVENTORY):
+                    msg = "(play, draw, display, inventory)"
+                    display(self.g.stdscr, self.draw_inventory(), 0, 0, 42 + 20, 2, 2, True)
+                
+                # Draw the player stats
+                msg = "(play, draw, display_stats)"
+                self.display_stats(self.g.stdscr, stats_x, stats_y)
 
-            # Draw the equipment
-            msg = "(play, draw, display_equipment)"
-            self.display_equipment(self.g.stdscr, equip_x, equip_y)
+                # Draw the equipment
+                if self.show_equipment:
+                    msg = "(play, draw, display_equipment)"
+                    self.display_equipment(self.g.stdscr, equip_x, equip_y)
 
-            # Draw the commands
-            msg = "(play, draw, display, commands)"
-            display(self.g.stdscr, self.draw_commands(), cmd_x, cmd_y, 13, 1, 1)
+                # Draw the commands
+                msg = "(play, draw, display, commands)"
+                display(self.g.stdscr, self.draw_commands(), cmd_x, cmd_y, 13, 1, 1)
 
-            # Draw the notifications
-            msg = "(play, draw, display, notifications)"
-            display(self.g.stdscr, self.draw_notifications(), notif_x, notif_y, 44 + 20)
+                # Draw the notifications
+                msg = "(play, draw, display, notifications)"
+                display(self.g.stdscr, self.draw_notifications(), notif_x, notif_y, 44 + 20)
 
-            # Draw the biome
-            msg = "(play, draw, display, biome)"
-            display(self.g.stdscr, self.draw_biome(), biome_x, biome_y, 13)
+                # Draw the biome
+                msg = "(play, draw, display, biome)"
+                display(self.g.stdscr, self.draw_biome(), biome_x, biome_y, 13)
+                
+            else:
+                for i, line in enumerate(self.commands):
+                    self.g.stdscr.addstr(i, 0, line, p(C.CYAN))
+                
+                self.g.stdscr.refresh()
         
         except Exception as e:
             self.draw_try(msg, e)
@@ -634,6 +681,7 @@ class Play:
                     elif key == ord('i'):
                         self.g.current_option = 0
                         self.push_state(PlayStates.INVENTORY)
+                    
 
                 elif self.play_state == PlayStates.COMMANDS:
                     if key == curses.KEY_UP or key == ord('w'):
@@ -754,10 +802,12 @@ class Play:
                                 if self.g.current_option == 0:
                                     weapon = self.g.player.inventory['weapons'][self.g.current_sub_option]
                                     self.g.player.equipment['weapon'] = weapon
+                                    self.g.player.stats['attack'] = self.g.player.stats['base_attack'] + W[weapon].value.attack
                                     add_notif(self.g, f"You equipped a {W[weapon].value.name}", C.GREEN)
                                 elif self.g.current_option == 1:
                                     armor = self.g.player.inventory['armors'][self.g.current_sub_option]
                                     self.g.player.equipment['armor'] = armor
+                                    self.g.player.stats['defense'] = self.g.player.stats['base_defense'] + A[armor].value.defense
                                     add_notif(self.g, f"You equipped a {A[armor].value.name}", C.GREEN)
                             except Exception as e:
                                 self.g.stdscr.addstr(0, 0, f"(play.py -> run, equip) An error occurred: {e}", p(C.RED))
@@ -765,7 +815,15 @@ class Play:
                                 time.sleep(4)
                                 run = False
                                 break
-                        
+                
+                elif self.play_state == PlayStates.HELP:
+                    if key == ord('\x1b') or key == ord(' ') or key == ord('\n'):
+                        self.pop_state()
+                
+                if key == ord('e'):
+                    self.show_equipment = not self.show_equipment
+
+
             except Exception as e:
                 self.g.stdscr.addstr(0, 0, f"(play.py -> run) An error occurred:  {e})", p(C.RED))
                 self.g.stdscr.refresh()

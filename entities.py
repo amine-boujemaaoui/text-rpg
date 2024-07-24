@@ -9,29 +9,31 @@ class Player:
         self.standing = False
         self.position = {'x': 0, 'y': 0}
         self.stats = {
-            'hp': 40,
-            'max_hp': 50,
-            'mana': 40,
-            'max_mana': 50,
-            'attack': 5,
-            'defense': 2,
-            'level': 4,
-            'exp': 50,
-            'gold': 1000,
+            'hp':           50,
+            'max_hp':       50,
+            'mana':         50,
+            'max_mana':     50,
+            'attack':       10,
+            'base_attack':  10,
+            'defense':       5,
+            'base_defense':  5,
+            'level':         1,
+            'exp':           0,
+            'gold':         10,
         }
         # Equipement initial
         self.equipment = {
             'weapon': W.SHORT_SWORD,
             'armor':  A.LEATHER,
             'potions': {
-                'healing': 6,
+                'healing': 2,
                 'mana': 2,
             }
         }
         # Inventaire initial
         self.inventory = {
-            'weapons': [W.SHORT_SWORD, W.LONG_SWORD],
-            'armors':  [A.LEATHER],
+            'weapons': [W.SHORT_SWORD],
+            'armors':  [],
         }
 
     def move(self, x, y) -> bool:
@@ -61,12 +63,32 @@ class Player:
             self.level_up()
             
     def level_up(self) -> None:
-        self.stats['level']   += 1
-        self.stats['exp']      = 0
-        self.stats['max_hp']  += 10
-        self.stats['hp']       = self.stats['max_hp']
-        self.stats['attack']  += 2
-        self.stats['defense'] += 2
+        self.stats['level']        += 1
+        self.stats['exp']           = 0
+        self.stats['max_hp']       += 10
+        self.stats['hp']            = self.stats['max_hp']
+        self.stats['base_attack']  += 2
+        self.stats['base_defense'] += 2
+    
+    def level_down(self) -> None:
+        self.stats['level']        -= 1
+        self.stats['exp']           = 0
+        self.stats['max_hp']       -= 10
+        self.stats['hp']            = self.stats['max_hp']
+        self.stats['base_attack']  -= 2
+        self.stats['base_defense'] -= 2
+
+        if self.stats['level'] < 1:
+            self.stats['level'] = 1
+        
+        if self.stats['base_attack'] < 0:
+            self.stats['exp'] = 0
+        
+        if self.stats['base_defense'] < 0:
+            self.stats['exp'] = 0
+            
+        self.stats['attack']        = self.stats['base_attack'] + W[self.equipment['weapon']].value.attack
+        self.stats['defense']       = self.stats['base_defense'] + A[self.equipment['armor']].value.defense
         
     def attack(self, enemy) -> bool:
         damage = max(0, self.stats['attack'] - enemy.stats['defense'])
@@ -98,6 +120,9 @@ class Enemy:
         self.weapon = weapon
         self.armor  = armor
         self.biome  = biome
+        
+        self.stats['attack']  += self.weapon.value.attack if self.weapon else 0
+        self.stats['defense'] += self.armor.value.defense if self.armor  else 0
 
     def attack(self, player) -> bool:
         damage = max(0, self.stats['attack'] - player.stats['defense'])
@@ -180,16 +205,12 @@ ARTS = {
     'dragon': [
         "╭───────────╮",
         "│ /\\ ___ /\\ │",
-        "│(  o   o  )│",
+        "│(  o   o  )│",     
         "│ \\   _   / │",
         "│  \\  ‾  /  │",
         "│   \\___/   │",
         "╰───────────╯",
     ],
-
-
-    
-    
 }
 
 def create_enemy(game, enemy_key):

@@ -15,12 +15,12 @@ class Map:
         self.width = width
         self.height = height
         self.data = self.generate_map()
-        self.generate_patch(Biome.GRASS,    2,  5,  7)
-        self.generate_patch(Biome.SAND,     3,  3,  6)
-        self.generate_patch(Biome.WATER,    2,  4,  7)
-        self.generate_patch(Biome.MOUNTAIN, 2,  4,  7)
-        self.generate_patch(Biome.FOREST,   5,  5, 10)
-        self.generate_shop(0.5)
+        self.generate_patch(Biome.GRASS,     2,  5,  7)
+        self.generate_patch(Biome.SAND,      4,  4,  5)
+        self.generate_patch(Biome.WATER,     2,  4,  7)
+        self.generate_patch(Biome.MOUNTAIN, 10,  4,  4)
+        self.generate_patch(Biome.FOREST,   15,  5,  7)
+        self.generate_shop(0.05)
 
     def generate_map(self):
         return [[Biome.GRASS for _ in range(self.width)] for _ in range(self.height)]
@@ -28,7 +28,7 @@ class Map:
     def generate_patch(self, tile: Tile, num_patches: int, min_length: int, max_length: int, irregular: bool = True) -> None:
         for _ in range(num_patches):
             # Ensure patch dimensions are within the data boundaries
-            width = random.randint(min_length, min(max_length, self.width - 2))
+            width  = random.randint(min_length, min(max_length, self.width - 2))
             height = random.randint(min_length, min(max_length, self.height - 2))
             
             # Randomly select the starting point within valid range
