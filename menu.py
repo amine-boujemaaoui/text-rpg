@@ -1,5 +1,6 @@
 import curses
 from utils import p, Colors as C, create_ui
+import utils
 
 
 class Menu:
@@ -7,33 +8,50 @@ class Menu:
         self.g = g
 
     def draw(self) -> None:
+        length = self.g.ui_max_length
+        options_length = 23
         options = [
             "New Game",
             "Load Game",
             "Rules",
             "Commands",
+            "Colors",
             "Quit",
         ]
         content = [
             "",
-            "                                ┌─────────────────────┐                               "
+            "┌─────────────────────┐".center(length)
         ]
         for option in options:
-            content.append(f"                                │{option.center(21)}│                               ",)
-        content.append("                                └─────────────────────┘                               ")
+            content.append(f"│   {option:<18}│".center(length),)
+        content.append("└─────────────────────┘".center(length))
         
         menu = create_ui("Menu", content)
         
-        start_x = 25 + 10
-        start_y = 45 + 11
+        start_x = length // 2 - options_length // 2 + 1
+        start_y = start_x + options_length
         first_option = 15
         for i, line in enumerate(menu):
+            
             if self.g.current_option == i - first_option:
-                self.g.stdscr.addstr(i,       0, line[:start_x],        p(C.CYAN))
-                self.g.stdscr.addstr(i, start_x , line[start_x:start_y], p(C.BLACK, C.WHITE))
-                self.g.stdscr.addstr(i, start_y, line[start_y:],        p(C.CYAN))
+                line_selected = f"> {options [i - first_option]}"
+                
+                self.g.stdscr.addstr(i,           0, line[:start_x + 3], p(C.CYAN))
+                self.g.stdscr.addstr(i, start_x + 3, line_selected,      p(C.YELLOW))
+                self.g.stdscr.addstr(i,     start_y, line[start_y:],     p(C.CYAN))
+                
+            elif i >= first_option and i < first_option + len(options):
+                line_selected = f"  {options [i - first_option]}"  
+                
+                self.g.stdscr.addstr(i,           0, line[:start_x + 3], p(C.CYAN))
+                self.g.stdscr.addstr(i, start_x + 3, line_selected,      p(C.WHITE))
+                self.g.stdscr.addstr(i,     start_y, line[start_y:],     p(C.CYAN))
+                 
             else:
-                self.g.stdscr.addstr(i, 0, line,                        p(C.CYAN))
+                self.g.stdscr.addstr(i, 0, line, p(C.CYAN))
+        
+        self.g.stdscr.addstr(self.g.ui_max_height-1, 1, "Press 'ENTER' to select an option and 'w', 's' to scroll.", p(C.GRAY, italic=True))
+                
         self.g.stdscr.refresh()
 
     def run(self) -> None:
@@ -47,7 +65,7 @@ class Menu:
             if key == curses.KEY_UP or key == ord('w'):
                 self.g.current_option = max(0, self.g.current_option - 1)
             elif key == curses.KEY_DOWN or key == ord('s'):
-                self.g.current_option = min(4, self.g.current_option + 1)
+                self.g.current_option = min(5, self.g.current_option + 1)
             
             elif key == ord('\n'):
                 match self.g.current_option:
@@ -66,5 +84,7 @@ class Menu:
                         self.g.current_state     = GameState.COMMANDS
                         run = False
                     case 4:
+                        utils.BlackAndWhite = not utils.BlackAndWhite
+                    case 5:
                         self.g.current_state     = GameState.QUIT
                         run = False

@@ -23,6 +23,8 @@ class Rules:
         
         for i, line in enumerate(rules):
             self.g.stdscr.addstr(i, 0, line, p(C.CYAN))
+            
+        self.g.stdscr.addstr(31, 1, "Press 'ENTER' to go back.", p(C.GRAY, italic=True))
         
         self.g.stdscr.refresh()
             

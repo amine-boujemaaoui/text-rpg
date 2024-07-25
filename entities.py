@@ -1,11 +1,12 @@
 from objects import Weapons as W, Armors as A
 from utils import add_notif, Colors as C
 from tile import Biome as B
+from map import Direction
 
 class Player:
     def __init__(self, g, name) -> None:
         self.g = g
-        self.name = name
+        self.name     = name
         self.standing = False
         self.position = {'x': 0, 'y': 0}
         self.stats = {
@@ -13,36 +14,62 @@ class Player:
             'max_hp':       50,
             'mana':         50,
             'max_mana':     50,
-            'attack':       10,
-            'base_attack':  10,
-            'defense':       5,
-            'base_defense':  5,
+            'attack':       20,
+            'base_attack':  20,
+            'defense':      30,
+            'base_defense': 30,
             'level':         1,
             'exp':           0,
             'gold':         10,
         }
         # Equipement initial
         self.equipment = {
-            'weapon': W.SHORT_SWORD,
-            'armor':  A.LEATHER,
+            'weapon': None,
+            'armor':  None,
             'potions': {
                 'healing': 2,
-                'mana': 2,
+                'mana':    2,
             }
         }
         # Inventaire initial
         self.inventory = {
-            'weapons': [W.SHORT_SWORD],
-            'armors':  [],
+            'weapons': [W.SHORT_SWORD, W.BATTLE_AXE],
+            'armors':  [A.LEATHER],
         }
 
-    def move(self, x, y) -> bool:
-        if 0 <= self.position['x'] + x < self.g.map.width and 0 <= self.position['y'] + y < self.g.map.height:
-            self.position['x'] += x
-            self.position['y'] += y
+    def move(self, dx, dy) -> bool:
+        new_x = self.position['x'] + dx
+        new_y = self.position['y'] + dy
+
+        if 0 <= new_x < self.g.map.width and 0 <= new_y < self.g.map.height:
+            self.position['x'] = new_x
+            self.position['y'] = new_y
             return True
+        return False
+
+    def move_direction(self, direction) -> bool:
+        x, y = self.g.map.current_map
+        half_size = self.g.map.grid_size // 2
+
+        if direction == Direction.NORTH and self.position['y'] == 0:
+            if y > -half_size:
+                self.g.map.change_map(direction)
+                self.position['y'] = self.g.map.height - 1
+        elif direction == Direction.SOUTH and self.position['y'] == self.g.map.height - 1:
+            if y < half_size:
+                self.g.map.change_map(direction)
+                self.position['y'] = 0
+        elif direction == Direction.WEST and self.position['x'] == 0:
+            if x > -half_size:
+                self.g.map.change_map(direction)
+                self.position['x'] = self.g.map.width - 1
+        elif direction == Direction.EAST and self.position['x'] == self.g.map.width - 1:
+            if x < half_size:
+                self.g.map.change_map(direction)
+                self.position['x'] = 0
         else:
             return False
+        return True
 
     def use_potion(self, potion_name) -> None:
         if potion_name in self.equipment['potions'] and self.equipment['potions'][potion_name] > 0:
@@ -50,12 +77,12 @@ class Player:
             match potion_name:
                 case 'healing':
                     self.stats['hp']   = min(self.stats['max_hp'], self.stats['hp'] + 20)
-                    add_notif(self.g, "You drank a healing potion!")
+                    add_notif(self.g.play, "You drank a healing potion!")
                 case 'mana':
                     self.stats['mana'] = min(self.stats['max_mana'], self.stats['mana'] + 20)
-                    add_notif(self.g, "You drank a mana potion!")
+                    add_notif(self.g.play, "You drank a mana potion!")
         else:
-            add_notif(self.g, f"You don't have any {potion_name} potion left!")
+            add_notif(self.g.play, f"You don't have any {potion_name} potion left!")
         
     def gain_exp(self, exp) -> None:
         self.stats['exp'] += exp
@@ -94,19 +121,19 @@ class Player:
         damage = max(0, self.stats['attack'] - enemy.stats['defense'])
         if enemy.stats['hp'] - damage <= 0:
             enemy.stats['hp'] = enemy.stats['max_hp']
-            add_notif(self.g, "")
-            add_notif(self.g, "")
+            add_notif(self.g.play, "")
+            add_notif(self.g.play, "")
             
-            add_notif(self.g, f"You gained {enemy.exp} exp and {enemy.money} gold!".center(40 + 20), C.YELLOW)
-            add_notif(self.g, "")
+            add_notif(self.g.play, f"You gained {enemy.exp} exp and {enemy.money} gold!".center(40 + 20), C.YELLOW)
+            add_notif(self.g.play, "")
             self.gain_exp(enemy.exp)
             self.stats['gold'] += enemy.money
-            add_notif(self.g, f"You killed the {enemy.name}!".center(40 + 20), C.GREEN)
-            add_notif(self.g, "")
+            add_notif(self.g.play, f"You killed the {enemy.name}!".center(40 + 20), C.GREEN)
+            add_notif(self.g.play, "")
             return True
         else:
             enemy.stats['hp'] -= damage
-            add_notif(self.g, f"You attacked the {enemy.name} for {damage} damage!")
+            add_notif(self.g.play, f"You attacked the {enemy.name} for {damage} damage!")
             return False
         
 class Enemy:
@@ -129,11 +156,11 @@ class Enemy:
         if player.stats['hp'] - damage <= 0:
             player.stats['hp'] = 0
             player.standing = False
-            add_notif(self.g, f"{self.name} killed you!")
+            add_notif(self.g.play, f"{self.name} killed you!")
             return True
         else:
             player.stats['hp'] -= damage
-            add_notif(self.g, f"{self.name} attacked you for {damage} damage!")
+            add_notif(self.g.play, f"{self.name} attacked you for {damage} damage!")
             return False
 
 # Dictionnaire des ennemis

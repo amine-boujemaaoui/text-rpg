@@ -122,12 +122,6 @@ ascii_art = {
         "  |[---]|  ",
         "  |  |  |  ",
         "  |__|__|  "
-    ],
-    'CASTLE': [
-        "  |¯¯|¯¯|  ",
-        "  |_   _|  ",
-        "  |  _  |  ",
-        "  |_| |_|  "
     ]
 }
 
@@ -138,4 +132,3 @@ class Biome(Enum):
     MOUNTAIN  = Tile('m')
     FOREST    = Tile('f')
     SHOP      = Tile('shop')
-    CASTLE    = Tile('castle')
