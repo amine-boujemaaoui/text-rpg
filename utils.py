@@ -4,7 +4,7 @@ import time
 import os
 
 from curses.textpad import Textbox
-from objects import Weapons, Armors, Rarity
+from objects import Weapons, Armors, Rarity, Rings
 from enum import Enum
 
 class Colors(Enum):
@@ -69,12 +69,14 @@ def save_game(g, filename='', first=False) -> None:
             "stats": g.player.stats,
             "equipment": {
                 "weapon": g.player.equipment['weapon'].name if first and g.player.equipment['weapon'] else g.player.equipment['weapon'] if g.player.equipment['weapon'] else None,
-                "armor": g.player.equipment['armor'].name if first and g.player.equipment['armor'] else g.player.equipment['armor'] if g.player.equipment['armor'] else None,
+                "armor":  g.player.equipment['armor'].name  if first and g.player.equipment['armor']  else g.player.equipment['armor']  if g.player.equipment['armor']  else None,
+                "ring":   g.player.equipment['ring'].name   if first and g.player.equipment['ring']   else g.player.equipment['ring']   if g.player.equipment['ring']   else None,
                 "potions": g.player.equipment['potions']
             },
             "inventory": {
                 "weapons": [weapon.name for weapon in g.player.inventory['weapons']] if first else [weapon for weapon in g.player.inventory['weapons']],
-                "armors": [armor.name for armor in g.player.inventory['armors']] if first else [armor for armor in g.player.inventory['armors']]
+                "armors":  [armor.name  for armor  in g.player.inventory['armors']]  if first else [armor  for armor  in g.player.inventory['armors']],
+                "rings":   [ring.name   for ring   in g.player.inventory['rings']]   if first else [ring   for ring   in g.player.inventory['rings']]
             }
         },
         "map": {
@@ -116,11 +118,13 @@ def load_game(g, filename="savegame") -> None:
     g.player.equipment = {
         "weapon":  Weapons[player_data["equipment"]["weapon"]].name if player_data["equipment"]["weapon"] else None,
         "armor":   Armors[player_data["equipment"]["armor"]].name   if player_data["equipment"]["armor"]  else None,
-        "potions": player_data["equipment"]["potions"]
+        "potions": player_data["equipment"]["potions"],
+        "ring":   player_data["equipment"]["ring"]
     }
     g.player.inventory = {
         'weapons': [Weapons[item].name for item in player_data["inventory"]["weapons"]],
         'armors':  [Armors[item].name  for item in player_data["inventory"]["armors"]],
+        'rings':   [Rings[item].name   for item in player_data["inventory"]["rings"]],
     }
 
     map_data = game_data["map"]
@@ -161,9 +165,13 @@ def draw_bar(value, value_max, size, fill='■', empty='─') -> str:
     return bar
 
 # =================================================================================================
-def draw_outline(length: int, content: list, title: str = "") -> list:
-    top_border = f"┌{'─' * (length - 2)}┐"
-    bottom_border = f"└{'─' * (length - 2)}┘"
+def draw_outline(length: int, content: list, title: str = "", rounded=False) -> list:
+    if rounded:
+        top_border = f"╭{'─' * (length - 2)}╮"
+        bottom_border = f"╰{'─' * (length - 2)}╯"
+    else:
+        top_border = f"┌{'─' * (length - 2)}┐"
+        bottom_border = f"└{'─' * (length - 2)}┘"
     
     if title:
         title_line = f"│{title.center(length - 2)}│"
@@ -213,8 +221,10 @@ def p(fg: Colors, bg: Colors = Colors.BLACK, reverse=False, italic=False) -> int
     if BlackAndWhite:
         fg_index    = list(Colors).index(Colors.WHITE)
         bg_index    = list(Colors).index(Colors.BLACK)
-        
-        return curses.color_pair(fg_index * len(Colors) + bg_index + 1)
+        color_pair  = curses.color_pair(fg_index * len(Colors) + bg_index + 1)
+        if reverse:
+            color_pair |= curses.A_REVERSE
+        return color_pair
     
     else:
         fg_index    = list(Colors).index(fg)
@@ -289,9 +299,10 @@ def fl(stdscr, t: float, color: Colors = Colors.YELLOW, msg: str = '') -> None:
     time.sleep(t)
 
 # =================================================================================================
-def create_ui(title: str, menu: list, width:int = 119, height:int = 33) -> list:
+def create_ui(title: str, menu: list, width:int = 119, height:int = 32, box=0) -> list:
     try: 
         w = width - 2
+        bow_width = 23
         middle = w // 2 - 23 // 2
         
         empty = f"│{" " * w}│"
@@ -306,15 +317,21 @@ def create_ui(title: str, menu: list, width:int = 119, height:int = 33) -> list:
             f"│{' ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝'.center(w)}│",
             empty,
             empty,
-            f"│{' ' * middle}┌─────────────────────┐{' ' * middle}│",
-            f"│{' ' * middle}│{title.center(21)   }│{' ' * middle}│",
-            f"│{' ' * middle}└─────────────────────┘{' ' * middle}│",
+            f"│{' ' * middle}┌─────────────────────┐{' ' * middle}│"        if title else empty,
+            f"│{' ' * middle}│{title.center(bow_width -2)}│{' ' * middle}│" if title else empty,
+            f"│{' ' * middle}└─────────────────────┘{' ' * middle}│"        if title else empty,
         ]
+        if box > 0:
+            ui.append( empty)
+            ui.append( f"│{'┌─────────────────────┐'.center(w)}│")
+            ui.extend([f"│{'│                     │'.center(w)}│" for _ in range(box)])
+            ui.append( f"│{'└─────────────────────┘'.center(w)}│",)
         
-        for line in menu:
-            ui.append(f"│ {line.ljust(w - 2)} │")
+        else:
+            for line in menu:
+                ui.append(f"│ {line.ljust(w - 2)} │")
         
-        for _ in range(height - len(menu) - 14):
+        for _ in range(height - len(ui)):
             ui.append(empty)
         
         ui.append(f"└{"─" * w}┘")
@@ -326,11 +343,15 @@ def create_ui(title: str, menu: list, width:int = 119, height:int = 33) -> list:
 def get_rarity_color(rarity: Rarity) -> Colors:
     match rarity:
         case Rarity.COMMON:
+            return Colors.WHITE
+        case Rarity.UNCOMMON:
             return Colors.GREEN
         case Rarity.RARE:
             return Colors.BLUE
         case Rarity.EPIC:
             return Colors.MAGENTA
+        case Rarity.LEGENDARY:
+            return Colors.YELLOW
     return Colors.WHITE
 
 # =================================================================================================
@@ -340,3 +361,37 @@ def list_saves(directory="saves") -> list:
     return [f[:-5] for f in os.listdir(directory) if f.endswith('.json')]
 
 # =================================================================================================
+def display_popup(p, content: list, x, y, w) -> None:
+    display(p.g.stdscr, draw_outline(w, content), x, y)
+    p.g.stdscr.refresh()
+    time.sleep(3)
+    
+# =================================================================================================
+def display_confirmation_popup(stdscr, x, y, w, message: str, options: list) -> int:
+    content = [
+        ("", Colors.YELLOW, Colors.BLACK),
+        (message.center(w - 2), Colors.YELLOW, Colors.BLACK),
+        ("", Colors.YELLOW, Colors.BLACK)
+    ]
+    
+    for option in options:
+        content.append((option.center(w - 2), Colors.WHITE, Colors.BLACK))
+    content.append(("", Colors.YELLOW, Colors.BLACK))
+
+    selected_option = 0
+    while True:
+        for i, line in enumerate(content):
+            if 3 <= i < 3 + len(options):
+                if i == 3 + selected_option:
+                    content[i] = (line[0], Colors.YELLOW, Colors.BLACK)
+                else:
+                    content[i] = (line[0], Colors.WHITE, Colors.BLACK)
+        display(stdscr, draw_outline(w, content, rounded=True), x, y)
+        stdscr.refresh()
+        key = stdscr.getch()
+        if key in (curses.KEY_UP, ord('w')):
+            selected_option = max(0, selected_option - 1)
+        elif key in (curses.KEY_DOWN, ord('s')):
+            selected_option = min(len(options) - 1, selected_option + 1)
+        elif key in (curses.KEY_ENTER, ord('\n')):
+            return selected_option  # Return the index of the selected option

@@ -24,7 +24,7 @@ class Rules:
         for i, line in enumerate(rules):
             self.g.stdscr.addstr(i, 0, line, p(C.CYAN))
             
-        self.g.stdscr.addstr(31, 1, "Press 'ENTER' to go back.", p(C.GRAY, italic=True))
+        self.g.stdscr.addstr(31, 1, "Press 'ENTER' or 'ESCAPE' to go back.", p(C.GRAY, italic=True))
         
         self.g.stdscr.refresh()
             
@@ -36,7 +36,7 @@ class Rules:
         
             while self.g.current_state == GameState.RULES:
                 key = self.g.stdscr.getch()
-                if key == ord('\n'):
+                if key == ord('\n') or key == ord('\x1b'):
                     self.g.current_state = GameState.MENU
                     break
         except Exception as e:

@@ -3,10 +3,10 @@ import random
 import curses
 import utils
 
-from utils import draw_bar, draw_outline, p, print_stat, format_line as fl, add_notif, display, Colors as C, cleanup as cl, save_game, clear_notif, create_ui, get_rarity_color
+from utils import draw_bar, draw_outline, p, print_stat, format_line as fl, add_notif, display, Colors as C, cleanup as cl, save_game, clear_notif, create_ui, get_rarity_color, display_popup, display_confirmation_popup
 from tile import ascii_art, Biome
 from game import Direction
-from objects import SHOP_WEAPONS, SHOP_ARMORS, Weapons as W, Armors as A, Rarity
+from objects import SHOP_WEAPONS, SHOP_ARMORS, Weapons as W, Armors as A, Rarity, Rings as R
 from enum import Enum
 from entities import ARTS
 
@@ -56,8 +56,6 @@ class Play:
             "└─────────────────────────────┴────────────────────────────┘".center(self.g.ui_max_length),
         ])
         
-        self.show_equipment = True
-        
         self.notifs = []
         add_notif(self, "")
         add_notif(self, "")
@@ -66,18 +64,18 @@ class Play:
         add_notif(self, 'Welcome to the game!'.center(60), C.YELLOW)
         add_notif(self, "")
         
-        self.m_x,  self.m_y,  self.m_w,  self.m_h  =  28,   0,  63,  21
-        self.f_x,  self.f_y,  self.f_w,  self.f_h  =  28,   0,  63,  21
-        self.s_x,  self.s_y,  self.s_w,  self.s_h  =   0,   0,  28,  21
-        self.sh_x, self.sh_y, self.sh_w, self.sh_h =  28,   0,  63,  21
-        self.e_x,  self.e_y,  self.e_w,  self.e_h  =  91,   0,  28,  21
-        self.c_x,  self.c_y,  self.c_w,  self.c_h  =   0,  25,  14,   6
-        self.n_x,  self.n_y,  self.n_w,  self.n_h  =  28,  25,  63,   6
-        self.b_x,  self.b_y,  self.b_w,  self.b_h  =  14,  25,  14,   3 
-        self.i_x,  self.i_y,  self.i_w,  self.i_h  =  28,   0,  63,  21
-        self.bt_x, self.bt_y, self.bt_w, self.bt_h =  91,  25,  28,   6
+        self.m_x,  self.m_y,  self.m_w,  self.m_h  =  28,   0,  63,  32
+        self.f_x,  self.f_y,  self.f_w,  self.f_h  =  28,   0,  63,  32
+        self.s_x,  self.s_y,  self.s_w,  self.s_h  =   0,   0,  28,  32
+        self.sh_x, self.sh_y, self.sh_w, self.sh_h =  28,   0,  63,  32
+        self.e_x,  self.e_y,  self.e_w,  self.e_h  =  91,   0,  28,  32
+        self.c_x,  self.c_y,  self.c_w,  self.c_h  =   0,  36,  14,   6
+        self.n_x,  self.n_y,  self.n_w,  self.n_h  =  28,  36,  63,   6
+        self.b_x,  self.b_y,  self.b_w,  self.b_h  =  14,  36,  14,   3 
+        self.i_x,  self.i_y,  self.i_w,  self.i_h  =  28,   0,  63,  32
+        self.bt_x, self.bt_y, self.bt_w, self.bt_h =  91,  36,  28,   6
         
-        self.empty_box_x, self.empty_box_y, self.empty_box_w, self.empty_box_h = 28, 0, 63, 23
+        self.empty_box_x, self.empty_box_y, self.empty_box_w, self.empty_box_h = 28, 0, 63, 34
     
         self.empty_box = draw_outline(self.empty_box_w, [("", C.WHITE, C.BLACK) for _ in range(self.empty_box_h)])
 
@@ -101,7 +99,7 @@ class Play:
                 tile = self.g.map.data[row_idx][col_idx]
                 return tile.value.symbol, tile.value.color
             else:
-                return ' ', None
+                return '?', None
 
         x, y = self.g.player.position['x'], self.g.player.position['y']
         map_content = []
@@ -137,22 +135,26 @@ class Play:
         empty    = (" " * (s_width - 2), C.WHITE, C.BLACK)
         mx, my   = self.g.map.current_map
 
+        st = self.g.player.stats
+        name = self.g.player.name.capitalize()
         content = [
-            ((f" Name       ?{self.g.player.name                      }"), C.WHITE,  C.BLACK),
+            (f" Name       ?{name                   }", C.WHITE,  C.BLACK),
             empty,   
-            ((f" HP         ?{hp_bar                                  }"), C.RED,    C.BLACK),
-            ((f" Mana       ?{mana_bar                                }"), C.BLUE,   C.BLACK),
-            ((f" Exp:       ?{exp_bar                                 }"), C.GREEN,  C.BLACK),
-            empty,   
-            ((f" Level      ?{str(self.g.player.stats['level'])       }"), C.GREEN,  C.BLACK),
-            ((f" Gold       ?{str(self.g.player.stats['gold']) + '$'  }"), C.YELLOW, C.BLACK),
-            ((f" Attack     ?{str(self.g.player.stats['attack'])      }"), C.WHITE,  C.BLACK),
-            ((f" Base ATK   ?{str(self.g.player.stats['base_attack']) }"), C.WHITE,  C.BLACK),
-            ((f" Defense    ?{str(self.g.player.stats['defense'])     }"), C.WHITE,  C.BLACK),
-            ((f" Base DEF   ?{str(self.g.player.stats['base_defense'])}"), C.WHITE,  C.BLACK),
-            empty,  
-            ((f" Position   ?{f"({x:>2},{y:>2})"                      }"), C.WHITE , C.BLACK),
-            ((f" Map        ?{f"({mx:>2},{my:>2})"                    }"), C.WHITE , C.BLACK),
+            (f" HP         ?{hp_bar                 }", C.RED,    C.BLACK),
+            (f" Mana       ?{mana_bar               }", C.BLUE,   C.BLACK),
+            (f" Exp:       ?{exp_bar                }", C.GREEN,  C.BLACK),
+            empty,     
+            (f" Level      ?{str(st['level'])       }", C.GREEN,  C.BLACK),
+            (f" Gold       ?{str(st['gold']) + '$'  }", C.YELLOW, C.BLACK),
+            empty,         
+            (f" Attack     ?{str(st['attack'])      }", C.WHITE,  C.BLACK),
+            (f" Base ATK   ?{str(st['base_attack']) }", C.WHITE,  C.BLACK),
+            (f" Critical   ?{str(st['critical'])+'%'}", C.WHITE,  C.BLACK),
+            (f" Defense    ?{str(st['defense'])     }", C.WHITE,  C.BLACK),
+            (f" Base DEF   ?{str(st['base_defense'])}", C.WHITE,  C.BLACK),
+            empty,    
+            (f" Position   ?{f"({x:>2},{y:>2})"     }", C.WHITE , C.BLACK),
+            (f" Map        ?{f"({mx:>2},{my:>2})"   }", C.WHITE , C.BLACK),
         ]
         for _ in range(s_height - len(content)):
             content.append(empty)
@@ -166,6 +168,7 @@ class Play:
     def draw_equipment(self, e_width, e_height) -> list:
         weapon  =   W[self.g.player.equipment['weapon']].value if self.g.player.equipment['weapon'] else None
         armor   =   A[self.g.player.equipment['armor']].value  if self.g.player.equipment['armor']  else None
+        ring    =   R[self.g.player.equipment['ring']].value   if self.g.player.equipment['ring']   else None
         healing = str(self.g.player.equipment['potions'].get('healing', 0))
         mana    = str(self.g.player.equipment['potions'].get('mana', 0))
         
@@ -190,23 +193,39 @@ class Play:
             a_defense = '-'
             a_r_name  = '-'
             a_r_color = C.WHITE
+            
+        if ring:
+            r_name    = ring.name
+            r_effect  = ring.effect
+            r_value   = '+' + str(ring.value)
+            r_r_color = get_rarity_color(ring.rarity)
+            r_r_name  = ring.rarity.value.capitalize()
+        else:
+            r_name    = '-'
+            r_effect  = '-'
+            r_value   = '-'
+            r_r_name  = '-'
+            r_r_color = C.WHITE
         
         empty = ("", C.WHITE, C.BLACK)
 
         content = [
-                (f" Weapon      ?"           , C.WHITE,   C.BLACK),
-                (f"  - name     ?{w_name   }", C.WHITE,   C.BLACK),
-                (f"  - ATK      ?{w_attack }", C.WHITE,   C.BLACK),
+                (f" Weapon      ?{w_name   }", w_r_color, C.BLACK),
+                (f"  - ATK      ?{w_attack }", w_r_color, C.BLACK),
                 (f"  - rarity   ?{w_r_name }", w_r_color, C.BLACK),
                 empty,
-                (f" Armor       ?"           , C.WHITE,   C.BLACK),
-                (f"  - name     ?{a_name   }", C.WHITE,   C.BLACK),
-                (f"  - DEF      ?{a_defense}", C.WHITE,   C.BLACK),
+                (f" Armor       ?{a_name   }", a_r_color, C.BLACK),
+                (f"  - DEF      ?{a_defense}", a_r_color, C.BLACK),
                 (f"  - rarity   ?{a_r_name }", a_r_color, C.BLACK),
                 empty,
+                (f" Ring        ?{r_name   }", r_r_color, C.BLACK),
+                (f"  - effect   ?{r_effect }", r_r_color, C.BLACK),
+                (f"  - value    ?{r_value  }", r_r_color, C.BLACK),
+                (f"  - rarity   ?{r_r_name }", r_r_color, C.BLACK),
+                empty,
                 (f" Potions     ?"           , C.WHITE,   C.BLACK),
-                (f" - healing   ?{healing  }", C.RED  ,   C.BLACK),
-                (f" - mana      ?{mana     }", C.BLUE ,   C.BLACK),
+                (f"  - healing  ?{healing  }", C.RED  ,   C.BLACK),
+                (f"  - mana     ?{mana     }", C.BLUE ,   C.BLACK),
         ]
         for _ in range(e_height - len(content)):
             content.append(empty)
@@ -270,8 +289,8 @@ class Play:
         empty = ("", C.CYAN, C.BLACK)
         
         enemy_info = [
-            (f"  Max HP        ?{str(enemy.stats['attack'])}", C.WHITE, C.BLACK),
-            (f"  Attack        ?{str(enemy.stats['attack'])}", C.WHITE, C.BLACK),
+            (f"   Max HP       ?{str(enemy.stats['attack'])}", C.WHITE, C.BLACK),
+            (f"   Attack       ?{str(enemy.stats['attack'])}", C.WHITE, C.BLACK),
         ]
 
         weapon = enemy.weapon.value if enemy.weapon else None
@@ -288,10 +307,10 @@ class Play:
             w_r_color = C.WHITE
             
         weapon_info = [
-            (f"  Weapon        ?",           C.WHITE,   C.BLACK),
-            (f"   - Name       ?{w_name  }", C.WHITE,   C.BLACK),
-            (f"   - Attack     ?{w_attack}", C.WHITE,   C.BLACK),
-            (f"   - Rarity     ?{w_r_name}", w_r_color, C.BLACK)
+            (f"   Weapon       ?",           C.WHITE,   C.BLACK),
+            (f"    - Name      ?{w_name  }", C.WHITE,   C.BLACK),
+            (f"    - Attack    ?{w_attack}", C.WHITE,   C.BLACK),
+            (f"    - Rarity    ?{w_r_name}", w_r_color, C.BLACK)
         ]
 
         armor = enemy.armor.value if enemy.armor else None
@@ -306,20 +325,21 @@ class Play:
             a_r_color = C.WHITE
             a_r_name  = "_"
         armor_info = [
-            (f"  Armor         ?",            C.WHITE,   C.BLACK),
-            (f"   - Name       ?{a_name   }", C.WHITE,   C.BLACK),
-            (f"   - Defense    ?{a_defense}", C.WHITE,   C.BLACK),
-            (f"   - Rarity     ?{a_r_name }", a_r_color, C.BLACK)
+            (f"   Armor        ?",            C.WHITE,   C.BLACK),
+            (f"    - Name      ?{a_name   }", C.WHITE,   C.BLACK),
+            (f"    - Defense   ?{a_defense}", C.WHITE,   C.BLACK),
+            (f"    - Rarity    ?{a_r_name }", a_r_color, C.BLACK)
         ]
 
         content = [
-            *[(line, C.YELLOW, C.BLACK) for line in enemy_art],
+            *[(" " + line, C.YELLOW, C.BLACK) for line in enemy_art],
             empty,
             *enemy_info,
             empty,
             *weapon_info,
             empty,
             *armor_info,
+            empty,
         ]
         for _ in range(f_height - len(content)):
             content.append(empty)
@@ -346,10 +366,10 @@ class Play:
             time_left_str = "".rjust(2)
 
         enemy_max_hp = self.current_enemy.stats['max_hp']
-        enemy_bar = draw_bar(self.current_enemy.stats['hp'], enemy_max_hp, 32, '█', '░')
+        enemy_bar = draw_bar(self.current_enemy.stats['hp'], enemy_max_hp, 42, '█', '░')
 
         # Time bar with two colors
-        time_bar_length  = 20
+        time_bar_length  = 14
         passed_length    = self.counter * time_bar_length // time_max
         remaining_length = time_bar_length - passed_length
 
@@ -407,6 +427,7 @@ class Play:
         
         content  = self.build_inventory_section(i_width, 0, "Weapons", self.g.player.inventory['weapons'], W, offset)
         content += self.build_inventory_section(i_width, 1, "Armors",  self.g.player.inventory['armors'],  A, offset)
+        content += self.build_inventory_section(i_width, 2, "Rings",   self.g.player.inventory['rings'],   R, offset)
         
         for _ in range(i_height - len(content)):
             content.append(empty)
@@ -431,6 +452,8 @@ class Play:
             elif items == SHOP_ARMORS:
                 stat = f"DEF: {str(item.value.defense).ljust(4)}"
             content.append((f"   {item.value.name.ljust(offset)} - {price}$  {stat}  Rarity: {item.value.rarity.value.capitalize()}", fg_sub, bg_sub))  
+        for _ in range(10 - len(content)):
+            content.append(("", C.WHITE, C.BLACK))
         return content
     
     def build_inventory_section(self, i_width:int, i:int, title: str, items: list, enum_class: Enum, offset: int) -> list:
@@ -451,7 +474,11 @@ class Play:
                 stat = f"ATK: {str(item_obj.attack).ljust(4)}"
             elif enum_class == A:
                 stat = f"DEF: {str(item_obj.defense).ljust(4)}"
+            elif enum_class == R:
+                stat = f"Effect : {item_obj.effect.ljust(8)} Value: {str(item_obj.value).ljust(2)}"
             content.append((f"   {item_obj.name.ljust(offset)} - {stat}  ({item_obj.rarity.value.capitalize()})".ljust(i_width), fg_sub, bg_sub)) 
+        for _ in range(10 - len(content)):
+            content.append(("", C.WHITE, C.BLACK))
         return content
 
     def battle(self) -> None:
@@ -461,12 +488,15 @@ class Play:
             enemy_key = random.choice(list(self.g.enemies.keys()))
             enemy = self.g.enemies[enemy_key]
             if enemy.biome.value.name == biome.name:
-                for _ in range(4):
-                    add_notif(self, "", C.WHITE, C.RED)
-                add_notif(self, f"You encountered a {enemy.name}!".center(40 + 20), C.WHITE, C.RED)
-                add_notif(self, "", C.WHITE, C.RED)
-                self.draw()
-                time.sleep(2)
+                w = self.f_w - 4
+                content = [
+                    ("", C.RED, C.BLACK),
+                    (f"/!\\ ATTENTION /!\\".center(w - 2), C.RED, C.BLACK),
+                    (f"You encountered a {enemy.name}!".center(w - 2), C.RED, C.BLACK),
+                    ("", C.RED, C.BLACK),
+                    ("", C.RED, C.BLACK),
+                ]
+                display_popup(self, content, self.f_x + 2, self.f_y + 10, w)
                 self.current_enemy = enemy
                 self.push_state(PlayStates.FIGHTING)
                 self.g.player.standing = True
@@ -506,9 +536,6 @@ class Play:
                             self.g.player.use_potion('mana')
                             self.fight_state = FightStates.ENEMY_TURN
                             self.counter = 0
-                        elif key == ord('e'):
-                            self.show_equipment = not self.show_equipment
-                            self.draw()
 
                 else:
                     if self.counter > self.enemy_time:
@@ -522,20 +549,30 @@ class Play:
                             self.counter = 0
 
                             gold_lost = random.randint(20, 50)
-                            level_lost = random.randint(1, 2)
-
+                            level_before = self.g.player.stats['level']
+                            level_lost = random.randint(1, 2) 
+                            
                             for _ in range(level_lost):
                                 self.g.player.level_down()
+                                
+                            level_after = self.g.player.stats['level']
+                            level_lost = level_before - level_after
 
                             self.g.player.stats['gold'] -= gold_lost
 
                             if self.g.player.stats['gold'] < 0:
                                 self.g.player.stats['gold'] = 0
 
-                            add_notif(self, f"You lost {gold_lost}$ and {level_lost} level(s)!", C.RED)
-                            add_notif(self, "You died! Game Over.", C.RED)
-                            self.g.stdscr.refresh()
-                            time.sleep(2)
+                            w = self.f_w - 4
+                            content = [
+                                ("", C.RED, C.BLACK),
+                                (f"/!\\ YOU DIED /!\\".center(w - 2), C.RED, C.BLACK),
+                                (f"You lost {gold_lost}$ and {level_lost} level(s)!".center(w - 2), C.RED, C.BLACK),
+                                ("", C.RED, C.BLACK),
+                                ("", C.RED, C.BLACK),
+                            ]
+                            display_popup(self, content, self.f_x + 2, self.f_y + 10, w)
+                            self.pop_state()
                             break
 
             
@@ -551,13 +588,11 @@ class Play:
         match self.g.current_option:
             case 0:
                 self.push_state(PlayStates.HELP)
-                self.push_state(PlayStates.HELP)
             case 1:
                 save_game(self.g)
                 add_notif(self, f"Saved game as '{self.g.player.name}'", C.GREEN)
             case 2:
-                utils.BlackAndWhite = not utils.BlackAndWhite
-                add_notif(self, "Colors toggled", C.CYAN)
+                self.toogle_colors()
             case 3:
                 if not self.state_stack[-2] == PlayStates.FIGHTING:
                     self.push_state(PlayStates.QUITTING)
@@ -599,9 +634,9 @@ class Play:
                 self.battle()
                 self.check_tile()
 
-        elif key == ord('h'):
+        elif key == ord('1'):
             self.g.player.use_potion('healing')
-        elif key == ord('j'):
+        elif key == ord('2'):
             self.g.player.use_potion('mana')
         elif key == ord('\x1b'):
             self.g.current_option = 0
@@ -714,7 +749,7 @@ class Play:
         elif key == ord('w'):
             self.g.current_option = max(0, self.g.current_option - 1)
         elif key == ord('s'):
-            self.g.current_option = min(1, self.g.current_option + 1)
+            self.g.current_option = min(2, self.g.current_option + 1)
 
     def handle_inventory_sub_options(self, key):
         if key == ord('\x1b'):
@@ -722,8 +757,16 @@ class Play:
         elif key in (curses.KEY_UP, ord('w')):
             self.g.current_sub_option = max(0, self.g.current_sub_option - 1)
         elif key in (curses.KEY_DOWN, ord('s')):
-            max_option = len(self.g.player.inventory['weapons']) - 1 if self.g.current_option == 0 else len(self.g.player.inventory['armors']) - 1
+            match self.g.current_option:
+                case 0:
+                    max_option = len(self.g.player.inventory['weapons']) - 1
+                case 1:
+                    max_option = len(self.g.player.inventory['armors']) - 1
+                case 2:
+                    max_option = len(self.g.player.inventory['rings']) - 1
+        
             self.g.current_sub_option = min(max_option, self.g.current_sub_option + 1)
+            
         elif key == ord('\n'):
             self.equip_item()
 
@@ -731,20 +774,82 @@ class Play:
         try:
             if self.g.current_option == 0:
                 weapon = self.g.player.inventory['weapons'][self.g.current_sub_option]
-                self.g.player.equipment['weapon'] = weapon
-                self.g.player.stats['attack'] = self.g.player.stats['base_attack'] + W[weapon].value.attack
-                add_notif(self, f"You equipped a {W[weapon].value.name}", C.GREEN)
+                if self.g.player.equipment['weapon'] == weapon:
+                    W[weapon].value.apply(self.g.player, remove=True),
+                    self.g.player.equipment['weapon'] = None
+                    add_notif(self, f"You unequipped a {W[weapon].value.name}", C.RED)
+                else:
+                    if self.g.player.equipment['weapon']:
+                        W[self.g.player.equipment['weapon']].value.apply(self.g.player, remove=True)
+                    self.g.player.equipment['weapon'] = weapon
+                    W[weapon].value.apply(self.g.player)
+                    add_notif(self, f"You equipped a {W[weapon].value.name}", C.GREEN)
+                return
             elif self.g.current_option == 1:
                 armor = self.g.player.inventory['armors'][self.g.current_sub_option]
-                self.g.player.equipment['armor'] = armor
-                self.g.player.stats['defense'] = self.g.player.stats['base_defense'] + A[armor].value.defense
-                add_notif(self, f"You equipped a {A[armor].value.name}", C.GREEN)
+                if self.g.player.equipment['armor'] == armor:
+                    A[armor].value.apply(self.g.player, remove=True)
+                    self.g.player.equipment['armor'] = None
+                    add_notif(self, f"You unequipped a {A[armor].value.name}", C.RED)
+                else:
+                    if self.g.player.equipment['armor']:
+                        A[self.g.player.equipment['armor']].value.apply(self.g.player, remove=True)
+                    self.g.player.equipment['armor'] = armor
+                    A[armor].value.apply(self.g.player)
+                    add_notif(self, f"You equipped a {A[armor].value.name}", C.GREEN)
+                return
+            elif self.g.current_option == 2:
+                ring = self.g.player.inventory['rings'][self.g.current_sub_option]
+                if self.g.player.equipment['ring'] == ring:
+                    R[self.g.player.equipment['ring']].value.apply(self.g.player, remove=True)
+                    self.g.player.equipment['ring'] = None
+                    add_notif(self, f"You unequipped a {R[ring].value.name}", C.RED)
+                else:
+                    if self.g.player.equipment['ring']:
+                        R[self.g.player.equipment['ring']].value.apply(self.g.player, remove=True)
+                    self.g.player.equipment['ring'] = ring
+                    R[ring].value.apply(self.g.player)
+                    add_notif(self, f"You equipped a {R[ring].value.name}", C.GREEN)
+                return
+
         except Exception as e:
             self.g.stdscr.addstr(0, 0, f"(play.py -> run, equip) An error occurred: {e}", p(C.RED))
             self.g.stdscr.refresh()
             time.sleep(4)
 
-    def quit_game(self):
+    def quit_game(self) -> bool:
+        w = self.f_w - 4
+        message = "Do you want to save?"
+        options = ["Yes", "No", "Cancel"]
+        selected_option = display_confirmation_popup(self.g.stdscr, self.f_x + 2, self.f_y + 10, w, message, options)
+        
+        match selected_option:
+            case 0:
+                save_game(self.g)
+                add_notif(self, f"Saved game as '{self.g.player.name}'", C.GREEN)
+                self.confirm_quit()
+                return True
+            case 1:
+                self.confirm_quit()
+                return True
+            case 2:
+                self.state_stack = [PlayStates.PLAYING]
+                return False
+            
+    def toogle_colors(self) -> None:
+        w = self.f_w - 4
+        message = "Do you want to toogle colors?"
+        options = ["Yes", "No"]
+        selected_option = display_confirmation_popup(self.g.stdscr, self.f_x + 2, self.f_y + 10, w, message, options)
+
+        match selected_option:
+            case 0:
+                utils.BlackAndWhite = not utils.BlackAndWhite
+                add_notif(self, "Colors toggled", C.CYAN)
+            case 1:
+                pass
+
+    def confirm_quit(self):
         add_notif(self, "Quitting the game...", C.RED)
         self.g.current_option = 0
         self.draw()
@@ -753,7 +858,6 @@ class Play:
     def draw(self) -> None:
         self.g.stdscr.clear()
     
-        
         msg = ""
         s  = self.play_state
         ss = self.state_stack
@@ -798,9 +902,8 @@ class Play:
                 msg = "(play, draw, display, biomes_thumbnail)"
                 display(self.g.stdscr, self.draw_biomes_thumbnail(self.bt_w, self.bt_h), self.bt_x, self.bt_y)
             
-                if self.show_equipment:
-                    msg = "(play, draw, display_equipment)"
-                    self.display_equipment(self.g.stdscr, self.e_x, self.e_y, self.e_w, self.e_h)
+                msg = "(play, draw, display_equipment)"
+                self.display_equipment(self.g.stdscr, self.e_x, self.e_y, self.e_w, self.e_h)
                     
             else:
                 for i, line in enumerate(self.commands):
@@ -817,18 +920,15 @@ class Play:
         while run:
             try:
                 self.draw()
+
                 if self.play_state == PlayStates.QUITTING:
-                    self.quit_game()
-                    self.state_stack = []
-                    run = False
-                    break
+                    if self.quit_game():
+                        self.state_stack = []
+                        run = False
+                        break
                 
-                else:
-                    
+                else:    
                     key = self.g.stdscr.getch()
-                    
-                    if key == ord('e'):
-                        self.show_equipment = not self.show_equipment
                         
                     if self.play_state == PlayStates.PLAYING:
                         self.handle_playing_state(key)

@@ -9,7 +9,7 @@ class Direction(Enum):
     WEST  = 'west'
 
 class Map:
-    def __init__(self, g, width=61, height=21, grid_size=11):
+    def __init__(self, g, width=61, height=32, grid_size=11):
         self.g = g
         self.width = width
         self.height = height
@@ -26,18 +26,17 @@ class Map:
         if map_coords not in self.maps:
             self.maps[map_coords] = (
                 [[Biome.GRASS for _ in range(self.width)] for _ in range(self.height)],
-                [[0] * self.width for _ in range(self.height)]
+                [[1] * self.width for _ in range(self.height)]
             )
         return self.maps[map_coords]
 
     def generate_patches_and_shop(self, map_coords):
         if self.is_map_visited(map_coords):
             return
-        self.generate_patch(Biome.GRASS,     2,  5,  7)
-        self.generate_patch(Biome.SAND,      4,  4,  5)
-        self.generate_patch(Biome.WATER,     2,  4,  7)
-        self.generate_patch(Biome.MOUNTAIN, 10,  4,  4)
-        self.generate_patch(Biome.FOREST,   15,  5,  7)
+        self.generate_patch(Biome.SAND,     random.randint(2, 6),  4,  9)
+        self.generate_patch(Biome.WATER,    random.randint(3, 7),  4, 11)
+        self.generate_patch(Biome.MOUNTAIN, random.randint(0, 9),  4,  8)
+        self.generate_patch(Biome.FOREST,   random.randint(5, 8),  5, 11)
         self.generate_shop(1)
         self.update_map_visited(map_coords, 1)
 

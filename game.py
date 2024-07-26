@@ -134,24 +134,17 @@ class Game:
             start_x = 50
             start_y = 15
             length = self.ui_max_length
-            content = [
-                "",
-                "┌─────────────────────┐".center(length)
-            ]
-            for option in saves:
-                content.append(f"│   {option:<18}│".center(length),)
-            content.append("└─────────────────────┘".center(length))
             
             while True:
                 stdscr.clear()
-                for idx, line in enumerate(create_ui("Load Game", content)):
+                for idx, line in enumerate(create_ui("Load Game", saves, box=len(saves))):
                     stdscr.addstr(idx, 0, line, p(C.CYAN))
                 
                 for idx, save in enumerate(saves):
                     if idx == selected_index:
-                        stdscr.addstr(start_y + idx, start_x, f" > {save}", p(C.YELLOW))
+                        stdscr.addstr(start_y + idx, start_x, f"> {save}", p(C.YELLOW))
                     else:
-                        stdscr.addstr(start_y + idx, start_x, f"   {save}", p(C.WHITE))
+                        stdscr.addstr(start_y + idx, start_x, f"  {save}", p(C.WHITE))
                     
                 stdscr.addstr(31, 1, "Press 'ENTER' to load the selected game or 'ESCAPE' to go back.", p(C.GRAY, italic=True))
 

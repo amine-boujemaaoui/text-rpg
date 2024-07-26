@@ -18,7 +18,7 @@ bioms = {
         'emoji' : '🌱',
         'enemy' : False,
         'rate'  : 0,
-        'symbol': '.',
+        'symbol': ' ',
         'solid' : False,
     },
     'w': {

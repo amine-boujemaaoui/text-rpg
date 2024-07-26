@@ -18,15 +18,8 @@ class Menu:
             "Colors",
             "Quit",
         ]
-        content = [
-            "",
-            "┌─────────────────────┐".center(length)
-        ]
-        for option in options:
-            content.append(f"│   {option:<18}│".center(length),)
-        content.append("└─────────────────────┘".center(length))
-        
-        menu = create_ui("Menu", content)
+
+        menu = create_ui("Menu", options, box=len(options))
         
         start_x = length // 2 - options_length // 2 + 1
         start_y = start_x + options_length

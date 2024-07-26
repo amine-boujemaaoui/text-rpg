@@ -1,7 +1,8 @@
-from objects import Weapons as W, Armors as A
+from objects import Weapons as W, Armors as A, Rings as R
 from utils import add_notif, Colors as C
 from tile import Biome as B
 from map import Direction
+import random
 
 class Player:
     def __init__(self, g, name) -> None:
@@ -16,6 +17,7 @@ class Player:
             'max_mana':     50,
             'attack':       20,
             'base_attack':  20,
+            'critical':     10,
             'defense':      30,
             'base_defense': 30,
             'level':         1,
@@ -29,12 +31,29 @@ class Player:
             'potions': {
                 'healing': 2,
                 'mana':    2,
-            }
+            },
+            'ring':   None,
         }
         # Inventaire initial
         self.inventory = {
-            'weapons': [W.SHORT_SWORD, W.BATTLE_AXE],
-            'armors':  [A.LEATHER],
+            'weapons': [
+                W.SHORT_SWORD,
+                W.BATTLE_AXE,
+                W.KATANA,
+                W.LONG_BOW,
+            ],
+            'armors':  [
+                A.LEATHER,
+                A.CHAINMAIL,
+                A.PLATE,
+                A.ADAMANTITE,
+            ],
+            'rings':   [
+                R.RING_OF_STRENGTH,
+                R.RING_OF_CRIT,
+                R.RING_OF_HEALTH,
+                R.RING_OF_DEFENSE,
+            ],
         }
 
     def move(self, dx, dy) -> bool:
@@ -101,34 +120,42 @@ class Player:
         self.stats['level']        -= 1
         self.stats['exp']           = 0
         self.stats['max_hp']       -= 10
-        self.stats['hp']            = self.stats['max_hp']
         self.stats['base_attack']  -= 2
         self.stats['base_defense'] -= 2
+        
+        if self.stats['max_hp'] < 10:
+            self.stats['max_hp'] = 10
+        self.stats['hp']            = self.stats['max_hp']
 
         if self.stats['level'] < 1:
             self.stats['level'] = 1
         
         if self.stats['base_attack'] < 0:
-            self.stats['exp'] = 0
+            self.stats['base_attack'] = 0
         
         if self.stats['base_defense'] < 0:
-            self.stats['exp'] = 0
+            self.stats['base_defense'] = 0
             
-        self.stats['attack']        = self.stats['base_attack'] + W[self.equipment['weapon']].value.attack
-        self.stats['defense']       = self.stats['base_defense'] + A[self.equipment['armor']].value.defense
+        self.stats['attack']  = self.stats['base_attack']  + W[self.equipment['weapon']].value.attack
+        self.stats['defense'] = self.stats['base_defense'] + A[self.equipment['armor']].value.defense
         
     def attack(self, enemy) -> bool:
-        damage = max(0, self.stats['attack'] - enemy.stats['defense'])
+        attack = random.randint(self.stats['attack'] -5, self.stats['attack'] + 5)
+        critical = random.randint(1, 100) <= self.stats['critical']
+        if critical:
+            attack *= 2
+            add_notif(self.g.play, "Critical hit!".center(61), C.RED)
+        damage = max(0, attack - enemy.stats['defense'])
         if enemy.stats['hp'] - damage <= 0:
             enemy.stats['hp'] = enemy.stats['max_hp']
             add_notif(self.g.play, "")
             add_notif(self.g.play, "")
             
-            add_notif(self.g.play, f"You gained {enemy.exp} exp and {enemy.money} gold!".center(40 + 20), C.YELLOW)
+            add_notif(self.g.play, f"You gained {enemy.exp} exp and {enemy.money} gold!".center(61), C.YELLOW)
             add_notif(self.g.play, "")
             self.gain_exp(enemy.exp)
             self.stats['gold'] += enemy.money
-            add_notif(self.g.play, f"You killed the {enemy.name}!".center(40 + 20), C.GREEN)
+            add_notif(self.g.play, f"You killed the {enemy.name}!".center(61), C.GREEN)
             add_notif(self.g.play, "")
             return True
         else:
@@ -150,9 +177,15 @@ class Enemy:
         
         self.stats['attack']  += self.weapon.value.attack if self.weapon else 0
         self.stats['defense'] += self.armor.value.defense if self.armor  else 0
+                
 
     def attack(self, player) -> bool:
-        damage = max(0, self.stats['attack'] - player.stats['defense'])
+        attack   = random.randint(self.stats['attack'] -5, self.stats['attack'] + 5)
+        critical = random.randint(1, 100) <= self.stats['critical']
+        if critical:
+            attack *= 2
+            add_notif(self.g.play, "Critical hit!", C.RED)
+        damage = max(0, attack - player.stats['defense'])
         if player.stats['hp'] - damage <= 0:
             player.stats['hp'] = 0
             player.standing = False
@@ -165,13 +198,13 @@ class Enemy:
 
 # Dictionnaire des ennemis
 ENEMIES = {
-    'slime':   ('slime',    'Slime',      {'hp': 10, 'max_hp': 10, 'attack':  3, 'defense': 1}, 10,  2,   None,          None,      B.FOREST  ),
-    'sqeleton':('sqeleton', 'Sqeleton',   {'hp': 15, 'max_hp': 15, 'attack':  4, 'defense': 1}, 15,  3, W.SHORT_SWORD,   None,      B.SAND    ),
-    'goblin':  ('goblin',   'Goblin',     {'hp': 20, 'max_hp': 20, 'attack':  5, 'defense': 2}, 20,  4, W.BATTLE_AXE,  A.LEATHER,   B.FOREST  ),
-    'hob_gob': ('hob_gob',  'Hob Goblin', {'hp': 25, 'max_hp': 25, 'attack':  6, 'defense': 3}, 25,  5, W.SHORT_BOW,   A.LEATHER,   B.FOREST  ),
-    'orc':     ('orc',      'Orc',        {'hp': 30, 'max_hp': 30, 'attack':  8, 'defense': 4}, 30,  7, W.HAND_AXE,    A.PLATE,     B.FOREST  ),
-    'troll':   ('troll',    'Troll',      {'hp': 40, 'max_hp': 40, 'attack': 10, 'defense': 6}, 40, 10, W.SHORT_SWORD, A.CHAINMAIL, B.SAND    ),
-    'dragon':  ('dragon',   'Dragon',     {'hp': 50, 'max_hp': 50, 'attack': 12, 'defense': 8}, 50, 25,   None,          None,      B.MOUNTAIN),
+    'slime':   ('slime',    'Slime',      {'hp': 10, 'max_hp': 10, 'attack':  3, 'critical': 2, 'defense': 1}, 10,  2,   None,          None,      B.FOREST  ),
+    'sqeleton':('sqeleton', 'Sqeleton',   {'hp': 15, 'max_hp': 15, 'attack':  4, 'critical': 2, 'defense': 1}, 15,  3, W.SHORT_SWORD,   None,      B.SAND    ),
+    'goblin':  ('goblin',   'Goblin',     {'hp': 20, 'max_hp': 20, 'attack':  5, 'critical': 2, 'defense': 2}, 20,  4, W.BATTLE_AXE,  A.LEATHER,   B.FOREST  ),
+    'hob_gob': ('hob_gob',  'Hob Goblin', {'hp': 25, 'max_hp': 25, 'attack':  6, 'critical': 2, 'defense': 3}, 25,  5, W.SHORT_BOW,   A.LEATHER,   B.FOREST  ),
+    'orc':     ('orc',      'Orc',        {'hp': 30, 'max_hp': 30, 'attack':  8, 'critical': 2, 'defense': 4}, 30,  7, W.HAND_AXE,    A.PLATE,     B.FOREST  ),
+    'troll':   ('troll',    'Troll',      {'hp': 40, 'max_hp': 40, 'attack': 10, 'critical': 2, 'defense': 6}, 40, 10, W.SHORT_SWORD, A.CHAINMAIL, B.SAND    ),
+    'dragon':  ('dragon',   'Dragon',     {'hp': 50, 'max_hp': 50, 'attack': 12, 'critical': 2, 'defense': 8}, 50, 25,   None,          None,      B.MOUNTAIN),
 }
 
 ARTS = {
@@ -247,4 +280,3 @@ def create_enemy(game, enemy_key):
     else:
         raise ValueError(f"Unknown enemy key: {enemy_key}")
     
-
