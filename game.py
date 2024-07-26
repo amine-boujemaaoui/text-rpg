@@ -168,11 +168,9 @@ class Game:
             self.player = Player(self, save_name)
             
             self.play.notifs = []
-            add_notif(self.play, "")
-            add_notif(self.play, "")
-            add_notif(self.play, "")
             add_notif(self.play, "Press 'ESCAPE' to enter command mode.".center(60), C.GRAY)
             add_notif(self.play, 'Welcome to the game!'.center(60), C.YELLOW)
+            add_notif(self.play, "")
             add_notif(self.play, "")
             
             stdscr.clear()

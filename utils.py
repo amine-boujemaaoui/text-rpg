@@ -82,8 +82,9 @@ def save_game(g, filename='', first=False) -> None:
         "map": {
             "maps": {tuple_to_str(k): [[tile.name for tile in row] for row in v[0]] for k, v in g.map.maps.items()},
             "map_explored": {tuple_to_str(k): v[1] for k, v in g.map.maps.items()},
-            "map_visited": g.map.map_visited,
-            "current_map": g.map.current_map
+            "map_visited":  g.map.map_visited,
+            "current_map":  g.map.current_map,
+            "castle_pos":   g.map.castle_pos,
         }
     }
 
@@ -145,6 +146,8 @@ def load_game(g, filename="savegame") -> None:
     g.map.map_visited = map_data["map_visited"]
     g.map.current_map = tuple(map_data["current_map"])
     g.map.data, g.map.data_explored = g.map.generate_map(g.map.current_map)
+    
+    g.map.castle_pos = map_data["castle_pos"]
 
     fl(g.stdscr, 0.2, Colors.GREEN, "Map loaded successfully")
     fl(g.stdscr, 0.2, Colors.GREEN, f"Game '{filename}' loaded successfully.")
@@ -258,12 +261,12 @@ def print_stat(stdscr, y, x, line, title_color, value_color, border_color):
 # =================================================================================================
 def add_notif(p, message: str, fg: Colors = Colors.WHITE, bg: Colors = Colors.BLACK) -> None:
     p.notifs.insert(0, (message, fg, bg))
-    if len(p.notifs) > 6:
+    if len(p.notifs) > p.max_notifs:
         p.notifs.pop()
 
 # =================================================================================================
 def clear_notif(p) -> None:
-    p.notifs = [ ('', Colors.WHITE, Colors.BLACK) for _ in range(6) ]
+    p.notifs = [('', Colors.WHITE, Colors.BLACK) for _ in range(p.max_notifs)]
 
 # =================================================================================================
 def display(stdscr, frame_with_colors, frame_x, frame_y, offset_l=0, offset_r=0, fix_title=False) -> None:

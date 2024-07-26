@@ -150,7 +150,9 @@ class Player:
             enemy.stats['hp'] = enemy.stats['max_hp']
             add_notif(self.g.play, "")
             add_notif(self.g.play, "")
-            
+            add_notif(self.g.play, "")
+            add_notif(self.g.play, "")
+            add_notif(self.g.play, "")
             add_notif(self.g.play, f"You gained {enemy.exp} exp and {enemy.money} gold!".center(61), C.YELLOW)
             add_notif(self.g.play, "")
             self.gain_exp(enemy.exp)

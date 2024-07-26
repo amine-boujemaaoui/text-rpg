@@ -56,26 +56,27 @@ class Play:
             "└─────────────────────────────┴────────────────────────────┘".center(self.g.ui_max_length),
         ])
         
+        self.max_notifs = 9
         self.notifs = []
-        add_notif(self, "")
-        add_notif(self, "")
-        add_notif(self, "")
+        clear_notif(self)
+        
         add_notif(self, "Press 'ESCAPE' to enter command mode.".center(60), C.GRAY)
         add_notif(self, 'Welcome to the game!'.center(60), C.YELLOW)
         add_notif(self, "")
+        add_notif(self, "")
         
-        self.m_x,  self.m_y,  self.m_w,  self.m_h  =  28,   0,  63,  32
-        self.f_x,  self.f_y,  self.f_w,  self.f_h  =  28,   0,  63,  32
-        self.s_x,  self.s_y,  self.s_w,  self.s_h  =   0,   0,  28,  32
-        self.sh_x, self.sh_y, self.sh_w, self.sh_h =  28,   0,  63,  32
-        self.e_x,  self.e_y,  self.e_w,  self.e_h  =  91,   0,  28,  32
-        self.c_x,  self.c_y,  self.c_w,  self.c_h  =   0,  36,  14,   6
-        self.n_x,  self.n_y,  self.n_w,  self.n_h  =  28,  36,  63,   6
-        self.b_x,  self.b_y,  self.b_w,  self.b_h  =  14,  36,  14,   3 
-        self.i_x,  self.i_y,  self.i_w,  self.i_h  =  28,   0,  63,  32
-        self.bt_x, self.bt_y, self.bt_w, self.bt_h =  91,  36,  28,   6
+        self.m_x,  self.m_y,  self.m_w,  self.m_h  =  28,   0,  63,  22
+        self.f_x,  self.f_y,  self.f_w,  self.f_h  =  28,   0,  63,  22
+        self.s_x,  self.s_y,  self.s_w,  self.s_h  =   0,   0,  28,  22
+        self.sh_x, self.sh_y, self.sh_w, self.sh_h =  28,   0,  63,  22
+        self.e_x,  self.e_y,  self.e_w,  self.e_h  =  91,   0,  28,  22
+        self.c_x,  self.c_y,  self.c_w,  self.c_h  =   0,  26,  14,   9
+        self.n_x,  self.n_y,  self.n_w,  self.n_h  =  28,  26,  63, self.max_notifs
+        self.b_x,  self.b_y,  self.b_w,  self.b_h  =  91,  26,  28,   7
+        self.i_x,  self.i_y,  self.i_w,  self.i_h  =  28,   0,  63,  22
+        self.bt_x, self.bt_y, self.bt_w, self.bt_h =  14,  26,  14,   9
         
-        self.empty_box_x, self.empty_box_y, self.empty_box_w, self.empty_box_h = 28, 0, 63, 34
+        self.empty_box_x, self.empty_box_y, self.empty_box_w, self.empty_box_h = 28, 0, 63, 24
     
         self.empty_box = draw_outline(self.empty_box_w, [("", C.WHITE, C.BLACK) for _ in range(self.empty_box_h)])
 
@@ -256,14 +257,15 @@ class Play:
         return o_commands
     
     def draw_biomes_thumbnail(self, bt_width, bt_height) -> list:
-        content = []
+        empty = ("", C.WHITE, C.BLACK)
+        content = [empty]
         for biome in Biome:
             tile = biome.value
-            line = f" {tile.symbol} - {tile.name.capitalize()}"
+            line = f" {tile.symbol} {tile.name.capitalize()}"
             content.append((line.ljust(bt_width), tile.color, C.BLACK))
         
-        for _ in range(bt_height - len(content)):
-            content.append(("", C.WHITE, C.BLACK))
+        for _ in range(bt_height - len(content) ):
+            content.append(empty)
         return draw_outline(bt_width, content)
     
     def draw_biome(self, b_width, b_height) -> list:
@@ -271,7 +273,7 @@ class Play:
         current_tile = self.g.map.data[y][x]
         biome_name  = current_tile.name
         biome_color = current_tile.value.color
-        biome_art   = ascii_art[biome_name]
+        biome_art = [line.center(b_width-2) for line in ascii_art[biome_name]]
         
         for _ in range(b_height - len(biome_art)):
             biome_art.append("")
@@ -452,7 +454,7 @@ class Play:
             elif items == SHOP_ARMORS:
                 stat = f"DEF: {str(item.value.defense).ljust(4)}"
             content.append((f"   {item.value.name.ljust(offset)} - {price}$  {stat}  Rarity: {item.value.rarity.value.capitalize()}", fg_sub, bg_sub))  
-        for _ in range(10 - len(content)):
+        for _ in range(7 - len(content)):
             content.append(("", C.WHITE, C.BLACK))
         return content
     
@@ -477,7 +479,7 @@ class Play:
             elif enum_class == R:
                 stat = f"Effect : {item_obj.effect.ljust(8)} Value: {str(item_obj.value).ljust(2)}"
             content.append((f"   {item_obj.name.ljust(offset)} - {stat}  ({item_obj.rarity.value.capitalize()})".ljust(i_width), fg_sub, bg_sub)) 
-        for _ in range(10 - len(content)):
+        for _ in range(7 - len(content)):
             content.append(("", C.WHITE, C.BLACK))
         return content
 

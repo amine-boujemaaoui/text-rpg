@@ -9,7 +9,7 @@ class Direction(Enum):
     WEST  = 'west'
 
 class Map:
-    def __init__(self, g, width=61, height=32, grid_size=11):
+    def __init__(self, g, width=61, height=22, grid_size=11):
         self.g = g
         self.width = width
         self.height = height
@@ -19,6 +19,8 @@ class Map:
         self.current_map = (0, 0)
         self.data, self.data_explored = self.generate_map(self.current_map)
         
+        self.castle_pos = (random.randint(-grid_size//2 + 1, grid_size//2), random.randint(-grid_size//2 + 1, grid_size//2))
+        
         self.generate_patches_and_shop(self.current_map)
         self.update_map_visited(self.current_map, 1)
 
@@ -26,7 +28,7 @@ class Map:
         if map_coords not in self.maps:
             self.maps[map_coords] = (
                 [[Biome.GRASS for _ in range(self.width)] for _ in range(self.height)],
-                [[1] * self.width for _ in range(self.height)]
+                [[0] * self.width for _ in range(self.height)]
             )
         return self.maps[map_coords]
 
@@ -37,7 +39,9 @@ class Map:
         self.generate_patch(Biome.WATER,    random.randint(3, 7),  4, 11)
         self.generate_patch(Biome.MOUNTAIN, random.randint(0, 9),  4,  8)
         self.generate_patch(Biome.FOREST,   random.randint(5, 8),  5, 11)
-        self.generate_shop(1)
+        self.generate_building(Biome.SHOP, 0.2)
+        if map_coords == self.castle_pos:
+            self.generate_building(Biome.CASTLE, 1)
         self.update_map_visited(map_coords, 1)
 
     def generate_patch(self, tile: Tile, num_patches: int, min_length: int, max_length: int, irregular: bool = True) -> None:
@@ -63,12 +67,12 @@ class Map:
                     else:
                         break  # Exit if out of bounds
         
-    def generate_shop(self, probability: float) -> None:
+    def generate_building(self, building: Biome, probability: float) -> None:
         if random.random() < probability:
-            shop_x = random.randint(1, self.width - 2)
-            shop_y = random.randint(1, self.height - 2)
-            self.data[shop_y][shop_x] = Biome.SHOP
-
+            building_x = random.randint(1, self.width - 2)
+            building_y = random.randint(1, self.height - 2)
+            self.data[building_y][building_x] = building
+            
     def change_map(self, direction):
         x, y = self.current_map
         if direction == Direction.NORTH:
